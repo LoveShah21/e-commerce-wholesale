@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div id="productCarousel" class="carousel slide" data-bs-ride="carousel">
+            <div class="carousel-inner">
+                {% for image in product.images.all %}
+                <div class="carousel-item {% if forloop.first %}active{% endif %}">
+                    <img src="{{ image.image_url }}" class="d-block w-100 rounded" alt="{{ image.alt_text }}">
+                </div>
+                {% empty %}
+                <div class="carousel-item active">
+                    <div class="bg-secondary text-white d-flex justify-content-center align-items-center rounded"
+                        style="height: 400px;">
+                        <span>No Image Available</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% if product.images.count > 1 %}
+            <button class="carousel-control-prev" type="button" data-bs-target="#productCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#productCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Next</span>
+            </button>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-md-6">
+        <h2>{{ product.product_name }}</h2>
+        <p class="lead text-muted">{{ product.description }}</p>
+        <hr>
+
+        <h4>Available Variants</h4>
+        <div class="accordion" id="variantsAccordion">
+            {% for variant in product.variants.all %}
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="heading{{ variant.id }}">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#collapse{{ variant.id }}">
+                        {{ variant.fabric.fabric_name }} - {{ variant.color.color_name }}
+                    </button>
+                </h2>
+                <div id="collapse{{ variant.id }}" class="accordion-collapse collapse"
+                    data-bs-parent="#variantsAccordion">
+                    <div class="accordion-body">
+                        <p><strong>Pattern:</strong> {{ variant.pattern.pattern_name }}</p>
+                        <p><strong>Base Price:</strong> ₹{{ variant.base_price }}</p>
+
+                        <h5>Select Size:</h5>
+                        <div class="list-group">
+                            {% for vsize in variant.variant_sizes.all %}
+                            <label class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <input class="form-check-input me-1" type="radio" name="variant_size"
+                                        value="{{ vsize.id }}">
+                                    {{ vsize.size.size_code }}
+                                    <small class="text-muted">(Avg Price: ₹{{ variant.base_price }})</small>
+                                </div>
+                                <span class="badge bg-primary rounded-pill">Stock: {{
+                                    vsize.stock_record.quantity_available|default:"0" }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                        <button class="btn btn-success mt-3 w-100">Add to Cart</button>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <p>No variants available.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

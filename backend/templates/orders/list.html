@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2 class="mb-4">My Orders</h2>
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>Order ID</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Details</th>
+                <th>Invoice</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+            <tr>
+                <td>#{{ order.id }}</td>
+                <td>{{ order.created_at|date:"F d, Y" }}</td>
+                <td>
+                    <span class="badge 
+                        {% if order.status == 'pending' %}bg-warning
+                        {% elif order.status == 'confirmed' %}bg-info
+                        {% elif order.status == 'shipped' %}bg-primary
+                        {% elif order.status == 'delivered' %}bg-success
+                        {% elif order.status == 'cancelled' %}bg-danger
+                        {% else %}bg-secondary{% endif %}">
+                        {{ order.status|title }}
+                    </span>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#order{{ order.id }}">
+                        View Items
+                    </button>
+                    <!-- Collapsible Item Details -->
+                    <div class="collapse mt-2" id="order{{ order.id }}">
+                        <div class="card card-body">
+                            <ul class="list-unstyled">
+                                {% for item in order.items.all %}
+                                <li>
+                                    {{ item.quantity }}x {{ item.variant_size.variant.product.product_name }}
+                                    ({{ item.variant_size.variant.color.color_name }} - {{
+                                    item.variant_size.size.size_code }})
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            {% if order.notes %}
+                            <p class="mb-0 text-muted"><strong>Note:</strong> {{ order.notes }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <a href="/api/reports/invoice/{{ order.id }}/" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-file-download"></i> PDF
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center">You haven't placed any orders yet.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

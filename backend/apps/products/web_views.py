@@ -1,0 +1,13 @@
+from django.shortcuts import render, get_object_or_404
+from django.views import View
+from .models import Product
+
+class ProductListView(View):
+    def get(self, request):
+        products = Product.objects.all().order_by('-created_at')
+        return render(request, 'products/list.html', {'products': products})
+
+class ProductDetailView(View):
+    def get(self, request, pk):
+        product = get_object_or_404(Product, pk=pk)
+        return render(request, 'products/detail.html', {'product': product})

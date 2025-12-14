@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="p-5 mb-4 bg-light rounded-3">
+    <div class="container-fluid py-5">
+        <h1 class="display-5 fw-bold">Premium Shirt Manufacturing</h1>
+        <p class="col-md-8 fs-4">From raw material sourcing to final delivery. Managing wholesale production with
+            precision.</p>
+        <a href="/products/" class="btn btn-primary btn-lg">Browse Catalog</a>
+        {% if not user.is_authenticated %}
+        <a href="/register/" class="btn btn-outline-secondary btn-lg">Register as Wholesale Buyer</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row align-items-md-stretch">
+    <div class="col-md-6">
+        <div class="h-100 p-5 text-white bg-dark rounded-3">
+            <h2>Custom Manufacturing</h2>
+            <p>Specify your exact requirements for fabrics, sizes, and styles. We handle the production logic
+                automatically.</p>
+            <button class="btn btn-outline-light" type="button">Learn More</button>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="h-100 p-5 bg-light border rounded-3">
+            <h2>Track Orders</h2>
+            <p>Real-time tracking of your manufacturing status, from material allocation to final dispatch.</p>
+            <a href="/orders/" class="btn btn-outline-secondary">View My Orders</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

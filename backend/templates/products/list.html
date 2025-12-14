@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2 class="mb-4">Our Products</h2>
+<div class="row row-cols-1 row-cols-md-3 g-4">
+    {% forproduct in products %}
+    <div class="col">
+        <div class="card h-100">
+            {% with image=product.images.first %}
+            {% if image %}
+            <img src="{{ image.image_url }}" class="card-img-top" alt="{{ image.alt_text }}"
+                style="height: 250px; object-fit: cover;">
+            {% else %}
+            <div class="card-img-top bg-secondary text-white d-flex justify-content-center align-items-center"
+                style="height: 250px;">
+                <span>No Image</span>
+            </div>
+            {% endif %}
+            {% endwith %}
+            <div class="card-body">
+                <h5 class="card-title">{{ product.product_name }}</h5>
+                <p class="card-text text-muted">{{ product.description|truncatewords:20 }}</p>
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <a href="/products/{{ product.id }}/" class="btn btn-outline-primary">View Details</a>
+                    <span class="badge bg-success">In Stock</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12 text-center">
+        <p>No products available at the moment.</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
