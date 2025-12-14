@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if material_supplier %}Edit Association{% else %}Add Association{% endif %} - Inventory{% endblock
+%}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'material-supplier-list-web' %}">Material-Supplier
+                        Associations</a></li>
+                <li class="breadcrumb-item active">{% if material_supplier %}Edit{% else %}Add{% endif %} Association
+                </li>
+            </ol>
+        </nav>
+        <h2><i class="bi bi-link-45deg me-2"></i>{% if material_supplier %}Edit Association{% else %}Add New
+            Association{% endif %}</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="post"
+                    action="{% if material_supplier %}{% url 'material-supplier-edit-web' material_supplier.id %}{% else %}{% url 'material-supplier-create-web' %}{% endif %}">
+                    {% csrf_token %}
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="material" class="form-label">Material <span
+                                        class="text-danger">*</span></label>
+                                <select class="form-select {% if errors.material %}is-invalid{% endif %}" id="material"
+                                    name="material" required {% if material_supplier %}disabled{% endif %}>
+                                    <option value="">Select Material</option>
+                                    {% for material in materials %}
+                                    <option value="{{ material.id }}" {% if material_supplier and
+                                        material_supplier.material.id==material.id %}selected{% endif %}>
+                                        {{ material.material_name }} ({{ material.material_type.material_type_name }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                {% if material_supplier %}
+                                <input type="hidden" name="material" value="{{ material_supplier.material.id }}">
+                                {% endif %}
+                                {% if errors.material %}
+                                <div class="invalid-feedback">{{ errors.material }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="supplier" class="form-label">Supplier <span
+                                        class="text-danger">*</span></label>
+                                <select class="form-select {% if errors.supplier %}is-invalid{% endif %}" id="supplier"
+                                    name="supplier" required {% if material_supplier %}disabled{% endif %}>
+                                    <option value="">Select Supplier</option>
+                                    {% for supplier in suppliers %}
+                                    <option value="{{ supplier.id }}" {% if material_supplier and
+                                        material_supplier.supplier.id==supplier.id %}selected{% endif %}>
+                                        {{ supplier.supplier_name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                {% if material_supplier %}
+                                <input type="hidden" name="supplier" value="{{ material_supplier.supplier.id }}">
+                                {% endif %}
+                                {% if errors.supplier %}
+                                <div class="invalid-feedback">{{ errors.supplier }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="supplier_price" class="form-label">Supplier Price (₹)</label>
+                                <input type="number" step="0.01" min="0"
+                                    class="form-control {% if errors.supplier_price %}is-invalid{% endif %}"
+                                    id="supplier_price" name="supplier_price"
+                                    value="{{ material_supplier.supplier_price|default:'' }}">
+                                {% if errors.supplier_price %}
+                                <div class="invalid-feedback">{{ errors.supplier_price }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="min_order_quantity" class="form-label">Minimum Order Quantity</label>
+                                <input type="number" step="0.01" min="0"
+                                    class="form-control {% if errors.min_order_quantity %}is-invalid{% endif %}"
+                                    id="min_order_quantity" name="min_order_quantity"
+                                    value="{{ material_supplier.min_order_quantity|default:'' }}">
+                                {% if errors.min_order_quantity %}
+                                <div class="invalid-feedback">{{ errors.min_order_quantity }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="reorder_level" class="form-label">Reorder Level</label>
+                                <input type="number" step="0.01" min="0"
+                                    class="form-control {% if errors.reorder_level %}is-invalid{% endif %}"
+                                    id="reorder_level" name="reorder_level"
+                                    value="{{ material_supplier.reorder_level|default:'' }}">
+                                {% if errors.reorder_level %}
+                                <div class="invalid-feedback">{{ errors.reorder_level }}</div>
+                                {% endif %}
+                                <div class="form-text">Alert will be triggered when stock falls below this level</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="lead_time_days" class="form-label">Lead Time (Days)</label>
+                                <input type="number" min="0"
+                                    class="form-control {% if errors.lead_time_days %}is-invalid{% endif %}"
+                                    id="lead_time_days" name="lead_time_days"
+                                    value="{{ material_supplier.lead_time_days|default:'' }}">
+                                {% if errors.lead_time_days %}
+                                <div class="invalid-feedback">{{ errors.lead_time_days }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="is_preferred" name="is_preferred" {% if
+                                material_supplier.is_preferred %}checked{% endif %}>
+                            <label class="form-check-label" for="is_preferred">
+                                <i class="bi bi-star-fill text-warning me-1"></i>Mark as Preferred Supplier
+                            </label>
+                            <div class="form-text">Preferred supplier will be shown in reorder alerts</div>
+                        </div>
+                    </div>
+
+                    {% if form_error %}
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>{{ form_error }}
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'material-supplier-list-web' %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save me-2"></i>{% if material_supplier %}Update{% else %}Create{% endif %}
+                            Association
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Information</h6>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted">
+                    <strong>Material & Supplier:</strong> Select the material and supplier to associate. This cannot be
+                    changed after creation.
+                </p>
+                <p class="small text-muted">
+                    <strong>Supplier Price:</strong> The price this supplier charges for this material.
+                </p>
+                <p class="small text-muted">
+                    <strong>Min Order Quantity:</strong> The minimum quantity that must be ordered from this supplier.
+                </p>
+                <p class="small text-muted">
+                    <strong>Reorder Level:</strong> When stock falls below this level, a reorder alert will be
+                    triggered.
+                </p>
+                <p class="small text-muted">
+                    <strong>Lead Time:</strong> Number of days it takes for the supplier to deliver the material.
+                </p>
+                <p class="small text-muted">
+                    <strong>Preferred Supplier:</strong> Mark this supplier as preferred for this material. Preferred
+                    suppliers are highlighted in reorder alerts.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

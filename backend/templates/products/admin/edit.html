@@ -1,0 +1,541 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Product - {{ product.product_name }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'dashboard-web' %}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'admin-product-list' %}">Products</a></li>
+                <li class="breadcrumb-item active">{{ product.product_name }}</li>
+            </ol>
+        </nav>
+        <div class="d-flex justify-content-between align-items-center">
+            <h2><i class="bi bi-pencil me-2"></i>Edit Product</h2>
+            <a href="{% url 'product-detail-web' product.id %}" class="btn btn-outline-info" target="_blank">
+                <i class="bi bi-eye me-2"></i>View Product Page
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Product Information -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Product Information</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'admin-product-edit' product.id %}">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="product_name" class="form-label">Product Name <span
+                                    class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="product_name" name="product_name"
+                                value="{{ product.product_name }}" required>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description"
+                                rows="3">{{ product.description }}</textarea>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save me-2"></i>Update Product
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Product Images -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Product Images</h5>
+                <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal"
+                    data-bs-target="#addImageModal">
+                    <i class="bi bi-plus-circle me-2"></i>Add Image
+                </button>
+            </div>
+            <div class="card-body">
+                {% if product.images.all %}
+                <div class="row g-3">
+                    {% for image in product.images.all %}
+                    <div class="col-md-3">
+                        <div class="card">
+                            <img src="{{ image.image_url }}" class="card-img-top" alt="{{ image.alt_text }}"
+                                style="height: 200px; object-fit: cover;">
+                            <div class="card-body p-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    {% if image.is_primary %}
+                                    <span class="badge bg-primary">Primary</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Order: {{ image.display_order }}</span>
+                                    {% endif %}
+                                    <form method="post" action="{% url 'admin-product-image-delete' image.id %}"
+                                        onsubmit="return confirm('Delete this image?');" style="display: inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-image fs-1 d-block mb-2"></i>
+                    No images uploaded yet. Click "Add Image" to upload.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Product Variants -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Product Variants</h5>
+                <button type="button" class="btn btn-dark btn-sm" data-bs-toggle="modal"
+                    data-bs-target="#addVariantModal">
+                    <i class="bi bi-plus-circle me-2"></i>Add Variant
+                </button>
+            </div>
+            <div class="card-body">
+                {% if product.variants.all %}
+                <div class="accordion" id="variantsAccordion">
+                    {% for variant in product.variants.all %}
+                    <div class="accordion-item mb-2">
+                        <h2 class="accordion-header" id="heading{{ variant.id }}">
+                            <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}"
+                                type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ variant.id }}"
+                                aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}">
+                                <div class="d-flex justify-content-between w-100 pe-3">
+                                    <span>
+                                        <strong>{{ variant.fabric.fabric_name }}</strong> -
+                                        {{ variant.color.color_name }} -
+                                        {{ variant.pattern.pattern_name }}
+                                    </span>
+                                    <span class="text-primary">₹{{ variant.base_price }}</span>
+                                </div>
+                            </button>
+                        </h2>
+                        <div id="collapse{{ variant.id }}"
+                            class="accordion-collapse collapse {% if forloop.first %}show{% endif %}"
+                            data-bs-parent="#variantsAccordion">
+                            <div class="accordion-body">
+                                <!-- Variant Details -->
+                                <div class="row mb-3">
+                                    <div class="col-md-12">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h6>Variant Details</h6>
+                                            <div>
+                                                <button type="button" class="btn btn-sm btn-outline-primary me-2"
+                                                    onclick="editVariant({{ variant.id }}, '{{ variant.fabric.id }}', '{{ variant.color.id }}', '{{ variant.pattern.id }}', '{{ variant.sleeve.id }}', '{{ variant.pocket.id }}', '{{ variant.base_price }}')">
+                                                    <i class="bi bi-pencil me-1"></i>Edit
+                                                </button>
+                                                <form method="post" action="{% url 'admin-variant-delete' variant.id %}"
+                                                    onsubmit="return confirm('Delete this variant and all its sizes?');"
+                                                    style="display: inline;">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                        <i class="bi bi-trash me-1"></i>Delete
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <small class="text-muted">Sleeve:</small>
+                                                <p>{{ variant.sleeve.sleeve_type }}</p>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <small class="text-muted">Pocket:</small>
+                                                <p>{{ variant.pocket.pocket_type }}</p>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <small class="text-muted">SKU:</small>
+                                                <p><code>{{ variant.sku }}</code></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <hr>
+
+                                <!-- Sizes and Stock -->
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h6>Sizes & Stock</h6>
+                                    <button type="button" class="btn btn-sm btn-success"
+                                        onclick="addSize({{ variant.id }})">
+                                        <i class="bi bi-plus-circle me-1"></i>Add Size
+                                    </button>
+                                </div>
+
+                                {% if variant.variant_sizes.all %}
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Size</th>
+                                                <th>In Stock</th>
+                                                <th>Reserved</th>
+                                                <th>Available</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for vsize in variant.variant_sizes.all %}
+                                            <tr>
+                                                <td><strong>{{ vsize.size.size_code }}</strong></td>
+                                                <td>
+                                                    {% if vsize.stock_record %}
+                                                    {{ vsize.stock_record.quantity_in_stock }}
+                                                    {% else %}
+                                                    0
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if vsize.stock_record %}
+                                                    {{ vsize.stock_record.quantity_reserved }}
+                                                    {% else %}
+                                                    0
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if vsize.stock_record %}
+                                                    <span
+                                                        class="badge {% if vsize.stock_record.quantity_available > 0 %}bg-success{% else %}bg-danger{% endif %}">
+                                                        {{ vsize.stock_record.quantity_available }}
+                                                    </span>
+                                                    {% else %}
+                                                    <span class="badge bg-danger">0</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    <button type="button" class="btn btn-sm btn-outline-primary"
+                                                        onclick="updateStock({{ vsize.id }}, {% if vsize.stock_record %}{{ vsize.stock_record.quantity_in_stock }}{% else %}0{% endif %})">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </button>
+                                                    <form method="post"
+                                                        action="{% url 'admin-variant-size-delete' vsize.id %}"
+                                                        onsubmit="return confirm('Delete this size?');"
+                                                        style="display: inline;">
+                                                        {% csrf_token %}
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                {% else %}
+                                <div class="alert alert-info">
+                                    No sizes added yet. Click "Add Size" to add sizes for this variant.
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-box fs-1 d-block mb-2"></i>
+                    No variants created yet. Click "Add Variant" to create your first variant.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Image Modal -->
+<div class="modal fade" id="addImageModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Product Image</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'admin-product-image-upload' product.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="image_url" class="form-label">Image URL <span class="text-danger">*</span></label>
+                        <input type="url" class="form-control" id="image_url" name="image_url" required>
+                        <div class="form-text">Enter the full URL of the image</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="alt_text" class="form-label">Alt Text</label>
+                        <input type="text" class="form-control" id="alt_text" name="alt_text">
+                        <div class="form-text">Descriptive text for accessibility</div>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="is_primary" name="is_primary">
+                        <label class="form-check-label" for="is_primary">
+                            Set as primary image
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Image</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Variant Modal -->
+<div class="modal fade" id="addVariantModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Product Variant</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'admin-variant-create' product.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="fabric" class="form-label">Fabric <span class="text-danger">*</span></label>
+                            <select class="form-select" id="fabric" name="fabric" required>
+                                <option value="">Select Fabric</option>
+                                {% for fabric in fabrics %}
+                                <option value="{{ fabric.id }}">{{ fabric.fabric_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="color" class="form-label">Color <span class="text-danger">*</span></label>
+                            <select class="form-select" id="color" name="color" required>
+                                <option value="">Select Color</option>
+                                {% for color in colors %}
+                                <option value="{{ color.id }}">{{ color.color_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="pattern" class="form-label">Pattern <span class="text-danger">*</span></label>
+                            <select class="form-select" id="pattern" name="pattern" required>
+                                <option value="">Select Pattern</option>
+                                {% for pattern in patterns %}
+                                <option value="{{ pattern.id }}">{{ pattern.pattern_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="sleeve" class="form-label">Sleeve <span class="text-danger">*</span></label>
+                            <select class="form-select" id="sleeve" name="sleeve" required>
+                                <option value="">Select Sleeve</option>
+                                {% for sleeve in sleeves %}
+                                <option value="{{ sleeve.id }}">{{ sleeve.sleeve_type }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="pocket" class="form-label">Pocket <span class="text-danger">*</span></label>
+                            <select class="form-select" id="pocket" name="pocket" required>
+                                <option value="">Select Pocket</option>
+                                {% for pocket in pockets %}
+                                <option value="{{ pocket.id }}">{{ pocket.pocket_type }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="base_price" class="form-label">Base Price (₹) <span
+                                    class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="base_price" name="base_price" step="0.01"
+                                min="0" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Variant</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Variant Modal -->
+<div class="modal fade" id="editVariantModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Variant</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" id="editVariantForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_fabric" class="form-label">Fabric <span
+                                    class="text-danger">*</span></label>
+                            <select class="form-select" id="edit_fabric" name="fabric" required>
+                                {% for fabric in fabrics %}
+                                <option value="{{ fabric.id }}">{{ fabric.fabric_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_color" class="form-label">Color <span class="text-danger">*</span></label>
+                            <select class="form-select" id="edit_color" name="color" required>
+                                {% for color in colors %}
+                                <option value="{{ color.id }}">{{ color.color_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_pattern" class="form-label">Pattern <span
+                                    class="text-danger">*</span></label>
+                            <select class="form-select" id="edit_pattern" name="pattern" required>
+                                {% for pattern in patterns %}
+                                <option value="{{ pattern.id }}">{{ pattern.pattern_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_sleeve" class="form-label">Sleeve <span
+                                    class="text-danger">*</span></label>
+                            <select class="form-select" id="edit_sleeve" name="sleeve" required>
+                                {% for sleeve in sleeves %}
+                                <option value="{{ sleeve.id }}">{{ sleeve.sleeve_type }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_pocket" class="form-label">Pocket <span
+                                    class="text-danger">*</span></label>
+                            <select class="form-select" id="edit_pocket" name="pocket" required>
+                                {% for pocket in pockets %}
+                                <option value="{{ pocket.id }}">{{ pocket.pocket_type }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="edit_base_price" class="form-label">Base Price (₹) <span
+                                    class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="edit_base_price" name="base_price" step="0.01"
+                                min="0" required>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Variant</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Size Modal -->
+<div class="modal fade" id="addSizeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Size</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" id="addSizeForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="size" class="form-label">Size <span class="text-danger">*</span></label>
+                        <select class="form-select" id="size" name="size" required>
+                            <option value="">Select Size</option>
+                            {% for size in sizes %}
+                            <option value="{{ size.id }}">{{ size.size_code }} - {{ size.size_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="stock_quantity" class="form-label">Initial Stock Quantity</label>
+                        <input type="number" class="form-control" id="stock_quantity" name="stock_quantity" value="0"
+                            min="0">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Size</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Update Stock Modal -->
+<div class="modal fade" id="updateStockModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Update Stock</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" id="updateStockForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="quantity_in_stock" class="form-label">Quantity in Stock <span
+                                class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="quantity_in_stock" name="quantity_in_stock"
+                            min="0" required>
+                        <div class="form-text">Total physical stock available</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Stock</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function editVariant(variantId, fabricId, colorId, patternId, sleeveId, pocketId, basePrice) {
+        document.getElementById('editVariantForm').action = `/admin/products/variants/${variantId}/update/`;
+        document.getElementById('edit_fabric').value = fabricId;
+        document.getElementById('edit_color').value = colorId;
+        document.getElementById('edit_pattern').value = patternId;
+        document.getElementById('edit_sleeve').value = sleeveId;
+        document.getElementById('edit_pocket').value = pocketId;
+        document.getElementById('edit_base_price').value = basePrice;
+        new bootstrap.Modal(document.getElementById('editVariantModal')).show();
+    }
+
+    function addSize(variantId) {
+        document.getElementById('addSizeForm').action = `/admin/products/variants/${variantId}/sizes/add/`;
+        new bootstrap.Modal(document.getElementById('addSizeModal')).show();
+    }
+
+    function updateStock(variantSizeId, currentStock) {
+        document.getElementById('updateStockForm').action = `/admin/products/sizes/${variantSizeId}/stock/update/`;
+        document.getElementById('quantity_in_stock').value = currentStock;
+        new bootstrap.Modal(document.getElementById('updateStockModal')).show();
+    }
+</script>
+{% endblock %}

@@ -1,36 +1,161 @@
 {% extends 'base.html' %}
 
+{% block extra_css %}
+<style>
+    .metric-card {
+        transition: transform 0.2s;
+    }
+
+    .metric-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .metric-icon {
+        font-size: 2.5rem;
+        opacity: 0.8;
+    }
+
+    .chart-container {
+        position: relative;
+        height: 300px;
+    }
+
+    .date-filter-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .low-stock-badge {
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+
+        0%,
+        100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.6;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row mb-4">
     <div class="col-12">
-        <h2>Admin Dashboard</h2>
+        <h2><i class="bi bi-speedometer2 me-2"></i>Admin Dashboard</h2>
         <p class="text-muted">Overview of Vaitikan City Operations</p>
     </div>
 </div>
 
-<!-- Key Metrics -->
+<!-- Date Range Filter -->
 <div class="row mb-4">
-    <div class="col-md-4">
-        <div class="card text-white bg-primary mb-3">
+    <div class="col-12">
+        <div class="card date-filter-card text-white">
             <div class="card-body">
-                <h5 class="card-title">Total Sales</h5>
-                <h3 class="card-text">₹{{ total_sales }}</h3>
+                <h5 class="card-title mb-3"><i class="bi bi-calendar-range me-2"></i>Date Range Filter</h5>
+                <form id="dateFilterForm" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="startDate" class="form-label">Start Date</label>
+                        <input type="date" class="form-control" id="startDate" name="start_date">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="endDate" class="form-label">End Date</label>
+                        <input type="date" class="form-control" id="endDate" name="end_date">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="trendDays" class="form-label">Trend Days</label>
+                        <select class="form-select" id="trendDays" name="days">
+                            <option value="7" selected>7 Days</option>
+                            <option value="14">14 Days</option>
+                            <option value="30">30 Days</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="stockThreshold" class="form-label">Stock Alert</label>
+                        <input type="number" class="form-control" id="stockThreshold" name="low_stock_threshold"
+                            value="10" min="1">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-light w-100">
+                            <i class="bi bi-funnel me-1"></i>Apply Filter
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card text-white bg-success mb-3">
+</div>
+
+<!-- Key Metrics -->
+<div class="row mb-4" id="metricsRow">
+    <div class="col-md-3">
+        <div class="card metric-card text-white bg-primary mb-3 shadow">
             <div class="card-body">
-                <h5 class="card-title">Total Orders</h5>
-                <h3 class="card-text">{{ total_orders }}</h3>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title text-uppercase mb-1">Total Sales</h6>
+                        <h3 class="mb-0" id="totalSales">₹{{ total_sales|floatformat:2 }}</h3>
+                    </div>
+                    <i class="bi bi-currency-rupee metric-icon"></i>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card text-white bg-warning mb-3">
+    <div class="col-md-3">
+        <div class="card metric-card text-white bg-success mb-3 shadow">
             <div class="card-body">
-                <h5 class="card-title">Pending Orders</h5>
-                <h3 class="card-text">{{ pending_orders }}</h3>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title text-uppercase mb-1">Total Orders</h6>
+                        <h3 class="mb-0" id="totalOrders">{{ total_orders }}</h3>
+                    </div>
+                    <i class="bi bi-cart-check metric-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card metric-card text-white bg-warning mb-3 shadow">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title text-uppercase mb-1">Pending Orders</h6>
+                        <h3 class="mb-0" id="pendingOrders">{{ pending_orders }}</h3>
+                    </div>
+                    <i class="bi bi-hourglass-split metric-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card metric-card text-white bg-danger mb-3 shadow">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title text-uppercase mb-1">Low Stock Items</h6>
+                        <h3 class="mb-0" id="lowStockCount">{{ low_stock_items|length }}</h3>
+                    </div>
+                    <i class="bi bi-exclamation-triangle metric-icon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sales Trend Chart -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Sales Trend</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="salesTrendChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -38,72 +163,76 @@
 
 <div class="row">
     <!-- Low Stock Alerts -->
-    <div class="col-md-6">
-        <div class="card h-100">
+    <div class="col-md-6 mb-4">
+        <div class="card h-100 shadow">
             <div class="card-header bg-danger text-white">
-                Low Stock Alerts (< 10) </div>
-                    <ul class="list-group list-group-flush">
-                        {% for stock in low_stock_items %}
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong>{{ stock.variant_size.variant.product.product_name }}</strong>
-                                <br>
-                                <small>{{ stock.variant_size.variant.color.color_name }} - {{
-                                    stock.variant_size.size.size_code }}</small>
-                            </div>
-                            <span class="badge bg-danger rounded-pill">{{ stock.quantity_in_stock }}</span>
-                        </li>
-                        {% empty %}
-                        <li class="list-group-item">All stock levels are healthy.</li>
-                        {% endfor %}
-                    </ul>
+                <h5 class="mb-0"><i class="bi bi-exclamation-octagon me-2"></i>Low Stock Alerts</h5>
+            </div>
+            <div class="card-body p-0" style="max-height: 400px; overflow-y: auto;">
+                <ul class="list-group list-group-flush" id="lowStockList">
+                    {% for stock in low_stock_items %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ stock.variant_size.variant.product.product_name }}</strong>
+                            <br>
+                            <small class="text-muted">
+                                {{ stock.variant_size.variant.color.color_name }} -
+                                {{ stock.variant_size.size.size_code }}
+                            </small>
+                        </div>
+                        <span class="badge bg-danger rounded-pill low-stock-badge">
+                            {{ stock.quantity_in_stock }} units
+                        </span>
+                    </li>
+                    {% empty %}
+                    <li class="list-group-item text-center text-success">
+                        <i class="bi bi-check-circle me-2"></i>All stock levels are healthy!
+                    </li>
+                    {% endfor %}
+                </ul>
             </div>
         </div>
+    </div>
 
-        <!-- Recent Orders -->
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-header">
-                    Recent Orders
-                </div>
-                <div class="table-responsive">
+    <!-- Recent Orders -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100 shadow">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Recent Orders</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
                     <table class="table table-hover mb-0">
-                        <thead>
+                        <thead class="table-light sticky-top">
                             <tr>
-                                <th>ID</th>
+                                <th>Order ID</th>
                                 <th>Customer</th>
                                 <th>Status</th>
                                 <th>Date</th>
-                                <th>Action</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="recentOrdersTable">
                             {% for order in recent_orders %}
                             <tr>
-                                <td>#{{ order.id }}</td>
+                                <td><strong>#{{ order.id }}</strong></td>
                                 <td>{{ order.user.full_name }}</td>
                                 <td>
                                     <span class="badge 
-                                    {% if order.status == 'pending' %}bg-warning
+                                    {% if order.status == 'pending' %}bg-warning text-dark
                                     {% elif order.status == 'confirmed' %}bg-info
-                                    {% elif order.status == 'shipped' %}bg-primary
+                                    {% elif order.status == 'processing' %}bg-primary
+                                    {% elif order.status == 'dispatched' %}bg-primary
                                     {% elif order.status == 'delivered' %}bg-success
                                     {% elif order.status == 'cancelled' %}bg-danger
                                     {% else %}bg-secondary{% endif %}">
                                         {{ order.status|title }}
                                     </span>
                                 </td>
-                                <td>{{ order.created_at|date:"M d" }}</td>
-                                <td>
-                                    <a href="/api/reports/invoice/{{ order.id }}/"
-                                        class="btn btn-sm btn-outline-secondary" title="Download Invoice">
-                                        <i class="fas fa-file-pdf"></i>
-                                    </a>
-                                </td>
+                                <td>{{ order.created_at|date:"M d, Y" }}</td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="5" class="text-center">No recent orders.</td>
+                                <td colspan="4" class="text-center text-muted">No recent orders.</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -112,4 +241,194 @@
             </div>
         </div>
     </div>
-    {% endblock %}
+</div>
+
+<!-- Loading Spinner -->
+<div id="loadingSpinner" class="position-fixed top-50 start-50 translate-middle d-none" style="z-index: 9999;">
+    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    let salesChart = null;
+
+    // Initialize chart with initial data
+    document.addEventListener('DOMContentLoaded', function () {
+        // Fetch initial data and render chart
+        fetchDashboardData();
+
+        // Handle form submission
+        document.getElementById('dateFilterForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            fetchDashboardData();
+        });
+    });
+
+    function fetchDashboardData() {
+        const form = document.getElementById('dateFilterForm');
+        const formData = new FormData(form);
+        const params = new URLSearchParams(formData);
+
+        // Show loading spinner
+        document.getElementById('loadingSpinner').classList.remove('d-none');
+
+        fetch(`/api/dashboard/stats/?${params.toString()}`)
+            .then(response => response.json())
+            .then(data => {
+                updateMetrics(data);
+                updateSalesChart(data.sales_trend);
+                updateLowStockList(data.low_stock_details);
+                updateRecentOrders(data.recent_orders);
+            })
+            .catch(error => {
+                console.error('Error fetching dashboard data:', error);
+                alert('Failed to load dashboard data. Please try again.');
+            })
+            .finally(() => {
+                // Hide loading spinner
+                document.getElementById('loadingSpinner').classList.add('d-none');
+            });
+    }
+
+    function updateMetrics(data) {
+        document.getElementById('totalSales').textContent = `₹${parseFloat(data.total_sales).toFixed(2)}`;
+        document.getElementById('totalOrders').textContent = data.total_orders;
+        document.getElementById('pendingOrders').textContent = data.pending_orders;
+        document.getElementById('lowStockCount').textContent = data.low_stock_count;
+    }
+
+    function updateSalesChart(salesTrend) {
+        const ctx = document.getElementById('salesTrendChart').getContext('2d');
+
+        const labels = salesTrend.map(item => {
+            const date = new Date(item.date);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        });
+        const data = salesTrend.map(item => item.sales);
+
+        // Destroy existing chart if it exists
+        if (salesChart) {
+            salesChart.destroy();
+        }
+
+        salesChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Sales (₹)',
+                    data: data,
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                return 'Sales: ₹' + context.parsed.y.toFixed(2);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function (value) {
+                                return '₹' + value.toFixed(0);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function updateLowStockList(lowStockDetails) {
+        const list = document.getElementById('lowStockList');
+
+        if (lowStockDetails.length === 0) {
+            list.innerHTML = `
+                <li class="list-group-item text-center text-success">
+                    <i class="bi bi-check-circle me-2"></i>All stock levels are healthy!
+                </li>
+            `;
+            return;
+        }
+
+        list.innerHTML = lowStockDetails.map(item => `
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>${item.variant_size__variant__product__product_name}</strong>
+                    <br>
+                    <small class="text-muted">Size: ${item.variant_size__size__size_code}</small>
+                </div>
+                <span class="badge bg-danger rounded-pill low-stock-badge">
+                    ${item.quantity_in_stock} units
+                </span>
+            </li>
+        `).join('');
+    }
+
+    function updateRecentOrders(recentOrders) {
+        const tbody = document.getElementById('recentOrdersTable');
+
+        if (recentOrders.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="4" class="text-center text-muted">No recent orders.</td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = recentOrders.map(order => {
+            const statusClass = getStatusBadgeClass(order.status);
+            const date = new Date(order.order_date);
+            const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+            return `
+                <tr>
+                    <td><strong>#${order.id}</strong></td>
+                    <td>${order.user__full_name}</td>
+                    <td>
+                        <span class="badge ${statusClass}">
+                            ${order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                        </span>
+                    </td>
+                    <td>${formattedDate}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    function getStatusBadgeClass(status) {
+        const statusMap = {
+            'pending': 'bg-warning text-dark',
+            'confirmed': 'bg-info',
+            'processing': 'bg-primary',
+            'dispatched': 'bg-primary',
+            'delivered': 'bg-success',
+            'cancelled': 'bg-danger'
+        };
+        return statusMap[status] || 'bg-secondary';
+    }
+</script>
+{% endblock %}

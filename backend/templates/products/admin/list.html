@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Products - Admin{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2><i class="bi bi-box-seam me-2"></i>Manage Products</h2>
+            <a href="{% url 'admin-product-create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>Create New Product
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Search and Filters -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" action="{% url 'admin-product-list' %}" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="search" class="form-label">Search</label>
+                        <input type="text" class="form-control" id="search" name="search"
+                            placeholder="Search by name or description..." value="{{ search_query }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="fabric" class="form-label">Fabric</label>
+                        <select class="form-select" id="fabric" name="fabric">
+                            <option value="">All Fabrics</option>
+                            {% for fabric in fabrics %}
+                            <option value="{{ fabric.id }}" {% if selected_fabric==fabric.id|stringformat:"s"
+                                %}selected{% endif %}>
+                                {{ fabric.fabric_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="color" class="form-label">Color</label>
+                        <select class="form-select" id="color" name="color">
+                            <option value="">All Colors</option>
+                            {% for color in colors %}
+                            <option value="{{ color.id }}" {% if selected_color==color.id|stringformat:"s" %}selected{%
+                                endif %}>
+                                {{ color.color_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="pattern" class="form-label">Pattern</label>
+                        <select class="form-select" id="pattern" name="pattern">
+                            <option value="">All Patterns</option>
+                            {% for pattern in patterns %}
+                            <option value="{{ pattern.id }}" {% if selected_pattern==pattern.id|stringformat:"s"
+                                %}selected{% endif %}>
+                                {{ pattern.pattern_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search me-2"></i>Search
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Products Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Image</th>
+                                <th>Product Name</th>
+                                <th>Description</th>
+                                <th>Variants</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in products %}
+                            <tr>
+                                <td>
+                                    {% with image=product.images.first %}
+                                    {% if image %}
+                                    <img src="{{ image.image_url }}" alt="{{ image.alt_text }}" class="img-thumbnail"
+                                        style="width: 60px; height: 60px; object-fit: cover;">
+                                    {% else %}
+                                    <div class="bg-secondary text-white d-flex justify-content-center align-items-center"
+                                        style="width: 60px; height: 60px;">
+                                        <i class="bi bi-image"></i>
+                                    </div>
+                                    {% endif %}
+                                    {% endwith %}
+                                </td>
+                                <td>
+                                    <strong>{{ product.product_name }}</strong>
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ product.description|truncatewords:10 }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ product.variant_count }} variant{{
+                                        product.variant_count|pluralize }}</span>
+                                </td>
+                                <td>
+                                    <small>{{ product.created_at|date:"M d, Y" }}</small>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'admin-product-edit' product.id %}"
+                                            class="btn btn-sm btn-outline-primary" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <a href="{% url 'product-detail-web' product.id %}"
+                                            class="btn btn-sm btn-outline-info" title="View" target="_blank">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                            onclick="confirmDelete({{ product.id }}, '{{ product.product_name }}')"
+                                            title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                    No products found. <a href="{% url 'admin-product-create' %}">Create your first
+                                        product</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong id="deleteProductName"></strong>?</p>
+                <p class="text-danger"><i class="bi bi-exclamation-triangle me-2"></i>This action cannot be undone. All
+                    variants, sizes, and stock records will be deleted.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete Product</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function confirmDelete(productId, productName) {
+        document.getElementById('deleteProductName').textContent = productName;
+        document.getElementById('deleteForm').action = `/admin/products/${productId}/delete/`;
+        new bootstrap.Modal(document.getElementById('deleteModal')).show();
+    }
+</script>
+{% endblock %}

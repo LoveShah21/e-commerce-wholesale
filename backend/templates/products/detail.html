@@ -1,19 +1,32 @@
 {% extends 'base.html' %}
 
+{% block title %}{{ product.product_name }} - Vaitikan City{% endblock %}
+
 {% block content %}
-<div class="row mt-4">
-    <div class="col-md-6">
-        <div id="productCarousel" class="carousel slide" data-bs-ride="carousel">
-            <div class="carousel-inner">
+<!-- Breadcrumb -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'product-list-web' %}">Products</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{{ product.product_name }}</li>
+    </ol>
+</nav>
+
+<div class="row">
+    <!-- Product Images -->
+    <div class="col-md-6 mb-4">
+        <div id="productCarousel" class="carousel slide shadow-sm" data-bs-ride="carousel">
+            <div class="carousel-inner rounded">
                 {% for image in product.images.all %}
                 <div class="carousel-item {% if forloop.first %}active{% endif %}">
-                    <img src="{{ image.image_url }}" class="d-block w-100 rounded" alt="{{ image.alt_text }}">
+                    <img src="{{ image.image_url }}" class="d-block w-100" alt="{{ image.alt_text }}"
+                        style="height: 500px; object-fit: cover;">
                 </div>
                 {% empty %}
                 <div class="carousel-item active">
-                    <div class="bg-secondary text-white d-flex justify-content-center align-items-center rounded"
-                        style="height: 400px;">
-                        <span>No Image Available</span>
+                    <div class="bg-secondary text-white d-flex justify-content-center align-items-center"
+                        style="height: 500px;">
+                        <i class="bi bi-image" style="font-size: 5rem;"></i>
                     </div>
                 </div>
                 {% endfor %}
@@ -27,53 +40,239 @@
                 <span class="carousel-control-next-icon" aria-hidden="true"></span>
                 <span class="visually-hidden">Next</span>
             </button>
+
+            <!-- Indicators -->
+            <div class="carousel-indicators">
+                {% for image in product.images.all %}
+                <button type="button" data-bs-target="#productCarousel" data-bs-slide-to="{{ forloop.counter0 }}" {% if
+                    forloop.first %}class="active" {% endif %} aria-current="true"
+                    aria-label="Slide {{ forloop.counter }}"></button>
+                {% endfor %}
+            </div>
             {% endif %}
         </div>
     </div>
+
+    <!-- Product Details -->
     <div class="col-md-6">
-        <h2>{{ product.product_name }}</h2>
+        <h1 class="mb-3">{{ product.product_name }}</h1>
         <p class="lead text-muted">{{ product.description }}</p>
         <hr>
 
-        <h4>Available Variants</h4>
-        <div class="accordion" id="variantsAccordion">
-            {% for variant in product.variants.all %}
-            <div class="accordion-item">
-                <h2 class="accordion-header" id="heading{{ variant.id }}">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                        data-bs-target="#collapse{{ variant.id }}">
-                        {{ variant.fabric.fabric_name }} - {{ variant.color.color_name }}
-                    </button>
-                </h2>
-                <div id="collapse{{ variant.id }}" class="accordion-collapse collapse"
-                    data-bs-parent="#variantsAccordion">
-                    <div class="accordion-body">
-                        <p><strong>Pattern:</strong> {{ variant.pattern.pattern_name }}</p>
-                        <p><strong>Base Price:</strong> ₹{{ variant.base_price }}</p>
+        {% if product.variants.exists %}
+        <div id="variantSelector">
+            <h4 class="mb-3">Select Variant</h4>
 
-                        <h5>Select Size:</h5>
-                        <div class="list-group">
-                            {% for vsize in variant.variant_sizes.all %}
-                            <label class="list-group-item d-flex justify-content-between align-items-center">
-                                <div>
-                                    <input class="form-check-input me-1" type="radio" name="variant_size"
-                                        value="{{ vsize.id }}">
-                                    {{ vsize.size.size_code }}
-                                    <small class="text-muted">(Avg Price: ₹{{ variant.base_price }})</small>
+            <!-- Variant Selection -->
+            <div class="accordion" id="variantsAccordion">
+                {% for variant in product.variants.all %}
+                <div class="accordion-item mb-2">
+                    <h2 class="accordion-header" id="heading{{ variant.id }}">
+                        <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#collapse{{ variant.id }}"
+                            aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}"
+                            aria-controls="collapse{{ variant.id }}">
+                            <div class="d-flex justify-content-between w-100 pe-3">
+                                <span>
+                                    <strong>{{ variant.fabric.fabric_name }}</strong> - {{ variant.color.color_name }}
+                                </span>
+                                <span class="text-primary">₹{{ variant.base_price }}</span>
+                            </div>
+                        </button>
+                    </h2>
+                    <div id="collapse{{ variant.id }}"
+                        class="accordion-collapse collapse {% if forloop.first %}show{% endif %}"
+                        aria-labelledby="heading{{ variant.id }}" data-bs-parent="#variantsAccordion">
+                        <div class="accordion-body">
+                            <!-- Variant Details -->
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <small class="text-muted">Pattern:</small>
+                                    <p class="mb-1">{{ variant.pattern.pattern_name }}</p>
                                 </div>
-                                <span class="badge bg-primary rounded-pill">Stock: {{
-                                    vsize.stock_record.quantity_available|default:"0" }}</span>
-                            </label>
-                            {% endfor %}
+                                <div class="col-6">
+                                    <small class="text-muted">Sleeve:</small>
+                                    <p class="mb-1">{{ variant.sleeve.sleeve_type }}</p>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Pocket:</small>
+                                    <p class="mb-1">{{ variant.pocket.pocket_type }}</p>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">SKU:</small>
+                                    <p class="mb-1"><code>{{ variant.sku }}</code></p>
+                                </div>
+                            </div>
+
+                            <!-- Size Selection -->
+                            <h6 class="mb-2">Select Size:</h6>
+                            <div class="row g-2 mb-3">
+                                {% for vsize in variant.variant_sizes.all %}
+                                {% with stock=vsize.stock_record.quantity_available|default:0 %}
+                                <div class="col-4">
+                                    <input type="radio" class="btn-check" name="variant_size_{{ variant.id }}"
+                                        id="size_{{ vsize.id }}" value="{{ vsize.id }}"
+                                        data-variant-id="{{ variant.id }}" data-price="{{ variant.base_price }}"
+                                        data-stock="{{ stock }}" {% if stock==0 %}disabled{% endif %}>
+                                    <label class="btn btn-outline-primary w-100" for="size_{{ vsize.id }}">
+                                        {{ vsize.size.size_code }}
+                                        <br>
+                                        <small class="{% if stock == 0 %}text-danger{% else %}text-success{% endif %}">
+                                            {% if stock == 0 %}
+                                            Out of Stock
+                                            {% elif stock < 5 %} Only {{ stock }} left {% else %} In Stock {% endif %}
+                                                </small>
+                                    </label>
+                                </div>
+                                {% endwith %}
+                                {% endfor %}
+                            </div>
+
+                            <!-- Quantity and Add to Cart -->
+                            <div class="row g-2 align-items-end">
+                                <div class="col-4">
+                                    <label for="quantity_{{ variant.id }}" class="form-label">Quantity</label>
+                                    <input type="number" class="form-control" id="quantity_{{ variant.id }}" value="1"
+                                        min="1" max="100">
+                                </div>
+                                <div class="col-8">
+                                    <button class="btn btn-success w-100 add-to-cart-btn"
+                                        data-variant-id="{{ variant.id }}" disabled>
+                                        <i class="bi bi-cart-plus me-2"></i>Add to Cart
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                        <button class="btn btn-success mt-3 w-100">Add to Cart</button>
                     </div>
                 </div>
+                {% endfor %}
             </div>
-            {% empty %}
-            <p>No variants available.</p>
-            {% endfor %}
+        </div>
+        {% else %}
+        <div class="alert alert-warning" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            No variants available for this product at the moment.
+        </div>
+        {% endif %}
+
+        <!-- Additional Information -->
+        <div class="card mt-4">
+            <div class="card-body">
+                <h5 class="card-title">Product Information</h5>
+                <ul class="list-unstyled mb-0">
+                    <li><i class="bi bi-check-circle text-success me-2"></i>Premium quality fabric</li>
+                    <li><i class="bi bi-check-circle text-success me-2"></i>Custom sizing available</li>
+                    <li><i class="bi bi-check-circle text-success me-2"></i>Bulk orders accepted</li>
+                    <li><i class="bi bi-check-circle text-success me-2"></i>Fast delivery</li>
+                </ul>
+            </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Handle size selection
+        document.querySelectorAll('input[type="radio"][name^="variant_size_"]').forEach(radio => {
+            radio.addEventListener('change', function () {
+                const variantId = this.dataset.variantId;
+                const addToCartBtn = document.querySelector(`.add-to-cart-btn[data-variant-id="${variantId}"]`);
+                addToCartBtn.disabled = false;
+            });
+        });
+
+        // Handle add to cart
+        document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const variantId = this.dataset.variantId;
+                const selectedSize = document.querySelector(`input[name="variant_size_${variantId}"]:checked`);
+
+                if (!selectedSize) {
+                    VaitikanApp.showToast('Please select a size', 'warning');
+                    return;
+                }
+
+                const variantSizeId = selectedSize.value;
+                const quantity = document.getElementById(`quantity_${variantId}`).value;
+                const stock = parseInt(selectedSize.dataset.stock);
+
+                if (parseInt(quantity) > stock) {
+                    VaitikanApp.showToast(`Only ${stock} items available in stock`, 'error');
+                    return;
+                }
+
+                // Add to cart via API
+                addToCart(variantSizeId, quantity);
+            });
+        });
+
+        function addToCart(variantSizeId, quantity) {
+            VaitikanApp.showLoading('Adding to cart...');
+
+            fetch('/api/cart/items/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    variant_size: variantSizeId,
+                    quantity: parseInt(quantity)
+                })
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => Promise.reject(err));
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    VaitikanApp.hideLoading();
+                    VaitikanApp.showToast('Item added to cart successfully!', 'success');
+                    // Update cart count if you have a cart badge
+                    updateCartCount();
+                })
+                .catch(error => {
+                    VaitikanApp.hideLoading();
+                    const message = error.detail || error.message || 'Failed to add item to cart';
+                    VaitikanApp.showToast(message, 'error');
+                });
+        }
+
+        function updateCartCount() {
+            fetch('/api/cart/', {
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    const cartBadge = document.getElementById('cartCount');
+                    if (cartBadge && data.items) {
+                        const totalItems = data.items.reduce((sum, item) => sum + item.quantity, 0);
+                        cartBadge.textContent = totalItems;
+                        cartBadge.style.display = totalItems > 0 ? 'inline' : 'none';
+                    }
+                })
+                .catch(error => console.error('Error updating cart count:', error));
+        }
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    });
+</script>
 {% endblock %}

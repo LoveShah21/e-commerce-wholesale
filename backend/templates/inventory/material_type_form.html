@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Material Type - Inventory{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-tag me-2"></i>Add New Material Type</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <form method="post" action="{% url 'material-type-create-web' %}">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="material_type_name" class="form-label">Material Type Name <span
+                                class="text-danger">*</span></label>
+                        <input type="text" class="form-control {% if errors.material_type_name %}is-invalid{% endif %}"
+                            id="material_type_name" name="material_type_name" required>
+                        {% if errors.material_type_name %}
+                        <div class="invalid-feedback">{{ errors.material_type_name }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="unit_of_measurement" class="form-label">Unit of Measurement <span
+                                class="text-danger">*</span></label>
+                        <input type="text" class="form-control {% if errors.unit_of_measurement %}is-invalid{% endif %}"
+                            id="unit_of_measurement" name="unit_of_measurement" placeholder="e.g., meters, kg, liters"
+                            required>
+                        {% if errors.unit_of_measurement %}
+                        <div class="invalid-feedback">{{ errors.unit_of_measurement }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+
+                    {% if form_error %}
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>{{ form_error }}
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex justify-content-between">
+                        <button type="button" class="btn btn-secondary" onclick="window.close()">
+                            <i class="bi bi-x me-2"></i>Cancel
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save me-2"></i>Create Material Type
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

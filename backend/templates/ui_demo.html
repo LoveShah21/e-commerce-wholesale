@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}UI Components Demo - Vaitikan City{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="mb-3">UI Components Demo</h1>
+            <p class="text-muted">Bootstrap 5.3 Modern UI Foundation</p>
+        </div>
+    </div>
+
+    <!-- Badges Demo -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Status Badges</h5>
+                </div>
+                <div class="card-body">
+                    <h6>Order Status:</h6>
+                    <div class="mb-3">
+                        {% include 'partials/_badges.html' with status='pending' type='order' %}
+                        {% include 'partials/_badges.html' with status='confirmed' type='order' %}
+                        {% include 'partials/_badges.html' with status='processing' type='order' %}
+                        {% include 'partials/_badges.html' with status='dispatched' type='order' %}
+                        {% include 'partials/_badges.html' with status='delivered' type='order' %}
+                        {% include 'partials/_badges.html' with status='cancelled' type='order' %}
+                    </div>
+
+                    <h6>Payment Status:</h6>
+                    <div class="mb-3">
+                        {% include 'partials/_badges.html' with status='pending' type='payment' %}
+                        {% include 'partials/_badges.html' with status='success' type='payment' %}
+                        {% include 'partials/_badges.html' with status='failed' type='payment' %}
+                    </div>
+
+                    <h6>Stock Status:</h6>
+                    <div class="mb-3">
+                        {% include 'partials/_badges.html' with status='in_stock' type='stock' %}
+                        {% include 'partials/_badges.html' with status='low_stock' type='stock' %}
+                        {% include 'partials/_badges.html' with status='out_of_stock' type='stock' %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerts Demo -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Alerts</h5>
+                </div>
+                <div class="card-body">
+                    {% include 'partials/_alerts.html' with type='success' message='Operation completed successfully!'
+                    dismissible=True %}
+                    {% include 'partials/_alerts.html' with type='error' message='An error occurred!' dismissible=True
+                    %}
+                    {% include 'partials/_alerts.html' with type='warning' message='Please review your input.'
+                    dismissible=True %}
+                    {% include 'partials/_alerts.html' with type='info' message='Here is some information.'
+                    dismissible=True %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinners Demo -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Small Spinner</h5>
+                </div>
+                <div class="card-body text-center">
+                    {% include 'partials/_loading.html' with type='spinner' size='sm' %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Medium Spinner</h5>
+                </div>
+                <div class="card-body text-center">
+                    {% include 'partials/_loading.html' with type='spinner' size='md' %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Dots Spinner</h5>
+                </div>
+                <div class="card-body text-center">
+                    {% include 'partials/_loading.html' with type='dots' %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Buttons Demo -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Buttons & Modals</h5>
+                </div>
+                <div class="card-body">
+                    <button type="button" class="btn btn-primary"
+                        onclick="VaitikanApp.showConfirm('Are you sure?', () => alert('Confirmed!'))">
+                        <i class="bi bi-check-circle me-1"></i>Show Confirm Modal
+                    </button>
+                    <button type="button" class="btn btn-danger"
+                        onclick="VaitikanApp.showDeleteConfirm('Delete this item?', () => alert('Deleted!'))">
+                        <i class="bi bi-trash me-1"></i>Show Delete Modal
+                    </button>
+                    <button type="button" class="btn btn-info"
+                        onclick="VaitikanApp.showInfo('<p>This is some information.</p>')">
+                        <i class="bi bi-info-circle me-1"></i>Show Info Modal
+                    </button>
+                    <button type="button" class="btn btn-success"
+                        onclick="VaitikanApp.showToast('Success message!', 'success')">
+                        <i class="bi bi-bell me-1"></i>Show Toast
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Demo -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Sample Table</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Product</th>
+                                    <th>Status</th>
+                                    <th>Price</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>1</td>
+                                    <td>Sample Product 1</td>
+                                    <td>{% include 'partials/_badges.html' with status='in_stock' type='stock' %}</td>
+                                    <td>₹1,299</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-primary">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-warning">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>2</td>
+                                    <td>Sample Product 2</td>
+                                    <td>{% include 'partials/_badges.html' with status='low_stock' type='stock' %}</td>
+                                    <td>₹999</td>
+                                    <td>
+                                        <button class="btn btn-sm btn-primary">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-warning">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

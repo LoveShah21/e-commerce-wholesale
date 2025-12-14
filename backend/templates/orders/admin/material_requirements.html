@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+
+{% block title %}Material Requirements - Order #{{ order.id }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2><i class="bi bi-tools me-2"></i>Material Requirements</h2>
+                <p class="text-muted mb-0">Order #{{ order.id }} - {{ order.user.full_name }}</p>
+            </div>
+            <a href="{% url 'admin-order-detail' order.id %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Order
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Feasibility Status -->
+<div class="row mb-4">
+    <div class="col-12">
+        {% if is_feasible %}
+        <div class="alert alert-success d-flex align-items-center" role="alert">
+            <i class="bi bi-check-circle-fill fs-4 me-3"></i>
+            <div>
+                <h5 class="alert-heading mb-1">Production Feasible</h5>
+                <p class="mb-0">All required materials are available in sufficient quantities.</p>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-danger d-flex align-items-center" role="alert">
+            <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
+            <div>
+                <h5 class="alert-heading mb-1">Insufficient Materials</h5>
+                <p class="mb-0">Some materials are not available in sufficient quantities. Please restock before
+                    processing this order.</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Material Requirements Table -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Required Materials ({{ total_materials_count }}
+                    materials)</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Material Name</th>
+                                <th>Material Type</th>
+                                <th>Unit</th>
+                                <th>Required Quantity</th>
+                                <th>Available Quantity</th>
+                                <th>Shortage</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for req in requirements %}
+                            <tr class="{% if not req.is_sufficient %}table-danger{% endif %}">
+                                <td><strong>{{ req.material_name }}</strong></td>
+                                <td><small class="text-muted">{{ req.material_type }}</small></td>
+                                <td>{{ req.unit_of_measurement }}</td>
+                                <td>{{ req.required_quantity }}</td>
+                                <td>{{ req.available_quantity }}</td>
+                                <td>
+                                    {% if req.shortage > 0 %}
+                                    <span class="text-danger"><strong>{{ req.shortage }}</strong></span>
+                                    {% else %}
+                                    <span class="text-success">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if req.is_sufficient %}
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle"></i> Sufficient
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-danger">
+                                        <i class="bi bi-exclamation-triangle"></i> Insufficient
+                                    </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Breakdown by Order Item -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-diagram-3 me-2"></i>Material Breakdown by Order Item</h5>
+            </div>
+            <div class="card-body">
+                {% for req in requirements %}
+                <div class="mb-4">
+                    <h6 class="text-primary"><i class="bi bi-box me-2"></i>{{ req.material_name }}</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Product Variant</th>
+                                    <th>Size</th>
+                                    <th>Order Quantity</th>
+                                    <th>Material per Unit</th>
+                                    <th>Total Material</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for spec in req.specifications %}
+                                <tr>
+                                    <td>
+                                        <small>
+                                            {{ spec.variant_size.variant.product.product_name }}<br>
+                                            <span class="text-muted">
+                                                {{ spec.variant_size.variant.fabric.fabric_name }},
+                                                {{ spec.variant_size.variant.color.color_name }}
+                                            </span>
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ spec.variant_size.size.size_code }}</span>
+                                    </td>
+                                    <td>{{ spec.order_quantity }}</td>
+                                    <td>{{ spec.spec_quantity }} {{ req.unit_of_measurement }}</td>
+                                    <td><strong>{{ spec.total }} {{ req.unit_of_measurement }}</strong></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <td colspan="4" class="text-end"><strong>Total Required:</strong></td>
+                                    <td><strong>{{ req.required_quantity }} {{ req.unit_of_measurement }}</strong></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Missing Materials Alert -->
+{% if missing_materials %}
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="bi bi-exclamation-octagon me-2"></i>Missing Materials</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">The following materials need to be restocked before this order can be processed:</p>
+                <ul class="list-group">
+                    {% for material in missing_materials %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>{{ material.material_name }}</strong><br>
+                            <small class="text-muted">
+                                Required: {{ material.required }}, Available: {{ material.available }}
+                            </small>
+                        </div>
+                        <span class="badge bg-danger rounded-pill">
+                            Short by {{ material.shortage }}
+                        </span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

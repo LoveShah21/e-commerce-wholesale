@@ -1,0 +1,46 @@
+{% comment %}
+Alert Components
+Usage: {% include 'partials/_alerts.html' with type='success' message='Operation completed!' dismissible=True %}
+Types: success, error, warning, info
+{% endcomment %}
+
+{% if type == 'success' %}
+<div class="alert alert-success {% if dismissible %}alert-dismissible fade show{% endif %}" role="alert">
+    <i class="bi bi-check-circle-fill me-2"></i>
+    <strong>Success!</strong> {{ message }}
+    {% if dismissible %}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    {% endif %}
+</div>
+{% elif type == 'error' or type == 'danger' %}
+<div class="alert alert-danger {% if dismissible %}alert-dismissible fade show{% endif %}" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    <strong>Error!</strong> {{ message }}
+    {% if dismissible %}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    {% endif %}
+</div>
+{% elif type == 'warning' %}
+<div class="alert alert-warning {% if dismissible %}alert-dismissible fade show{% endif %}" role="alert">
+    <i class="bi bi-exclamation-circle-fill me-2"></i>
+    <strong>Warning!</strong> {{ message }}
+    {% if dismissible %}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    {% endif %}
+</div>
+{% elif type == 'info' %}
+<div class="alert alert-info {% if dismissible %}alert-dismissible fade show{% endif %}" role="alert">
+    <i class="bi bi-info-circle-fill me-2"></i>
+    <strong>Info:</strong> {{ message }}
+    {% if dismissible %}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    {% endif %}
+</div>
+{% else %}
+<div class="alert alert-secondary {% if dismissible %}alert-dismissible fade show{% endif %}" role="alert">
+    {{ message }}
+    {% if dismissible %}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    {% endif %}
+</div>
+{% endif %}

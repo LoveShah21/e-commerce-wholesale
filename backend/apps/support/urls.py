@@ -6,6 +6,13 @@ from .views import (
     ComplaintListCreateView, ComplaintDetailView, ComplaintStatusUpdateView,
     FeedbackCreateView, FeedbackListView, FeedbackDetailView
 )
+from .admin_views import (
+    AdminInquiryListView, AdminInquiryDetailView,
+    AdminQuotationRequestCreateView, AdminQuotationPriceCreateView,
+    AdminQuotationPriceSendView, AdminQuotationStatusUpdateView,
+    AdminComplaintListView, AdminComplaintDetailView, AdminComplaintResolveView,
+    AdminFeedbackListView
+)
 
 urlpatterns = [
     # Inquiry endpoints
@@ -28,4 +35,18 @@ urlpatterns = [
     path('feedback/', FeedbackCreateView.as_view(), name='feedback-create'),
     path('feedback/list/', FeedbackListView.as_view(), name='feedback-list'),
     path('feedback/<int:pk>/', FeedbackDetailView.as_view(), name='feedback-detail'),
+    
+    # Admin inquiry and quotation management
+    path('admin/inquiries/', AdminInquiryListView.as_view(), name='admin-inquiry-list'),
+    path('admin/inquiries/<int:pk>/', AdminInquiryDetailView.as_view(), name='admin-inquiry-detail'),
+    path('admin/inquiries/<int:inquiry_id>/quotation-requests/', AdminQuotationRequestCreateView.as_view(), name='admin-quotation-request-create'),
+    path('admin/quotation-requests/<int:quotation_request_id>/price/', AdminQuotationPriceCreateView.as_view(), name='admin-quotation-price-create'),
+    path('admin/quotation-prices/<int:quotation_price_id>/send/', AdminQuotationPriceSendView.as_view(), name='admin-quotation-price-send'),
+    path('admin/quotation-requests/<int:quotation_request_id>/status/', AdminQuotationStatusUpdateView.as_view(), name='admin-quotation-status-update'),
+    
+    # Admin complaint and feedback management
+    path('admin/complaints/', AdminComplaintListView.as_view(), name='admin-complaint-list'),
+    path('admin/complaints/<int:pk>/', AdminComplaintDetailView.as_view(), name='admin-complaint-detail'),
+    path('admin/complaints/<int:pk>/resolve/', AdminComplaintResolveView.as_view(), name='admin-complaint-resolve'),
+    path('admin/feedback/', AdminFeedbackListView.as_view(), name='admin-feedback-list'),
 ]

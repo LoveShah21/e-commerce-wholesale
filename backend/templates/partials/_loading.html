@@ -1,0 +1,63 @@
+{% comment %}
+Loading Spinner Components
+Usage: {% include 'partials/_loading.html' with type='spinner' size='md' %}
+Types: spinner, dots, overlay
+Sizes: sm, md, lg
+{% endcomment %}
+
+{% if type == 'spinner' %}
+{% if size == 'sm' %}
+<div class="spinner-border spinner-border-sm text-primary" role="status">
+    <span class="visually-hidden">Loading...</span>
+</div>
+{% elif size == 'lg' %}
+<div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+    <span class="visually-hidden">Loading...</span>
+</div>
+{% else %}
+<div class="spinner-border text-primary" role="status">
+    <span class="visually-hidden">Loading...</span>
+</div>
+{% endif %}
+{% elif type == 'dots' %}
+<div class="d-flex justify-content-center align-items-center">
+    <div class="spinner-grow spinner-grow-sm text-primary me-2" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+    <div class="spinner-grow spinner-grow-sm text-primary me-2" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+    <div class="spinner-grow spinner-grow-sm text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+</div>
+{% elif type == 'overlay' %}
+<div class="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center"
+    style="background-color: rgba(0,0,0,0.5); z-index: 9999;" id="loadingOverlay">
+    <div class="text-center">
+        <div class="spinner-border text-light" style="width: 3rem; height: 3rem;" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="text-light mt-3">{{ message|default:"Loading..." }}</p>
+    </div>
+</div>
+{% elif type == 'button' %}
+<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+{{ text|default:"Loading..." }}
+{% elif type == 'card' %}
+<div class="card">
+    <div class="card-body text-center py-5">
+        <div class="spinner-border text-primary mb-3" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="text-muted mb-0">{{ message|default:"Loading data..." }}</p>
+    </div>
+</div>
+{% else %}
+<div class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+    <p class="text-muted mt-3">{{ message|default:"Loading..." }}</p>
+</div>
+{% endif %}

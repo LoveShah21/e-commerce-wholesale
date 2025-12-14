@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+
+{% block title %}Complaint #{{ complaint.id }} - Admin{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2><i class="bi bi-exclamation-triangle me-2"></i>Complaint #{{ complaint.id }}</h2>
+            <a href="{% url 'admin-complaint-list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to List
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Complaint Details -->
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Complaint Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Customer:</strong>
+                        <p class="mb-0">{{ complaint.user.full_name }}</p>
+                        <small class="text-muted">{{ complaint.user.email }}</small>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Date:</strong>
+                        <p class="mb-0">{{ complaint.complaint_date|date:"M d, Y" }}</p>
+                        <small class="text-muted">{{ complaint.complaint_date|time:"h:i A" }}</small>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Status:</strong>
+                        <p class="mb-0">
+                            {% if complaint.status == 'open' %}
+                            <span class="badge bg-danger">Open</span>
+                            {% elif complaint.status == 'in_progress' %}
+                            <span class="badge bg-warning">In Progress</span>
+                            {% elif complaint.status == 'resolved' %}
+                            <span class="badge bg-success">Resolved</span>
+                            {% elif complaint.status == 'closed' %}
+                            <span class="badge bg-secondary">Closed</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Category:</strong>
+                        <p class="mb-0">
+                            <span class="badge bg-secondary">{{ complaint.complaint_category }}</span>
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Related Order:</strong>
+                        <p class="mb-0">
+                            {% if complaint.order %}
+                            <a href="{% url 'order-tracking-web' complaint.order.id %}" class="text-decoration-none">
+                                Order #{{ complaint.order.id }}
+                            </a>
+                            {% else %}
+                            <span class="text-muted">No order associated</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="mb-3">
+                    <strong>Description:</strong>
+                    <p class="mt-2">{{ complaint.complaint_description }}</p>
+                </div>
+
+                {% if complaint.resolution_date %}
+                <hr>
+                <div class="mb-3">
+                    <strong>Resolution Date:</strong>
+                    <p class="mb-0">{{ complaint.resolution_date|date:"M d, Y" }}</p>
+                    <small class="text-muted">{{ complaint.resolution_date|time:"h:i A" }}</small>
+                </div>
+                {% endif %}
+
+                {% if complaint.resolution_notes %}
+                <div class="mb-3">
+                    <strong>Resolution Notes:</strong>
+                    <p class="mt-2">{{ complaint.resolution_notes }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Resolution Form -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-pencil-square me-2"></i>Update Status</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'admin-complaint-resolve' complaint.id %}">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
+                        <select class="form-select" id="status" name="status" required>
+                            {% for value, label in status_choices %}
+                            <option value="{{ value }}" {% if complaint.status==value %}selected{% endif %}>
+                                {{ label %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <small class="form-text text-muted">
+                            Changing status to "Resolved" will automatically set the resolution date.
+                        </small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="resolution_notes" class="form-label">Resolution Notes</label>
+                        <textarea class="form-control" id="resolution_notes" name="resolution_notes" rows="5"
+                            placeholder="Enter resolution notes or actions taken...">{{ complaint.resolution_notes }}</textarea>
+                        <small class="form-text text-muted">
+                            Provide details about how the complaint was handled.
+                        </small>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-check-circle me-2"></i>Update Complaint
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        {% if complaint.order %}
+        <div class="card mt-3">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="bi bi-box-seam me-2"></i>Order Information</h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-2">
+                    <strong>Order ID:</strong> #{{ complaint.order.id }}
+                </p>
+                <p class="mb-2">
+                    <strong>Order Date:</strong> {{ complaint.order.order_date|date:"M d, Y" }}
+                </p>
+                <p class="mb-2">
+                    <strong>Total Amount:</strong> ₹{{ complaint.order.total_amount }}
+                </p>
+                <p class="mb-2">
+                    <strong>Status:</strong>
+                    {% if complaint.order.status == 'pending' %}
+                    <span class="badge bg-warning">Pending</span>
+                    {% elif complaint.order.status == 'confirmed' %}
+                    <span class="badge bg-info">Confirmed</span>
+                    {% elif complaint.order.status == 'processing' %}
+                    <span class="badge bg-primary">Processing</span>
+                    {% elif complaint.order.status == 'dispatched' %}
+                    <span class="badge bg-success">Dispatched</span>
+                    {% elif complaint.order.status == 'delivered' %}
+                    <span class="badge bg-success">Delivered</span>
+                    {% elif complaint.order.status == 'cancelled' %}
+                    <span class="badge bg-danger">Cancelled</span>
+                    {% endif %}
+                </p>
+                <a href="{% url 'order-tracking-web' complaint.order.id %}"
+                    class="btn btn-sm btn-outline-primary w-100 mt-2">
+                    <i class="bi bi-eye me-2"></i>View Order Details
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

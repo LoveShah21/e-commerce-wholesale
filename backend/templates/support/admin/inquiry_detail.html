@@ -1,0 +1,393 @@
+{% extends 'base.html' %}
+
+{% block title %}Inquiry #{{ inquiry.id }} - Admin{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2><i class="bi bi-envelope me-2"></i>Inquiry #{{ inquiry.id }}</h2>
+            <a href="{% url 'admin-inquiry-list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to List
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Inquiry Details -->
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Inquiry Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Customer:</strong>
+                        <p class="mb-0">{{ inquiry.user.full_name }}</p>
+                        <small class="text-muted">{{ inquiry.user.email }}</small>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Date:</strong>
+                        <p class="mb-0">{{ inquiry.inquiry_date|date:"M d, Y" }}</p>
+                        <small class="text-muted">{{ inquiry.inquiry_date|time:"h:i A" }}</small>
+                    </div>
+                    <div class="col-md-3">
+                        <strong>Status:</strong>
+                        <p class="mb-0">
+                            {% if inquiry.status == 'pending' %}
+                            <span class="badge bg-warning">Pending</span>
+                            {% elif inquiry.status == 'reviewed' %}
+                            <span class="badge bg-info">Reviewed</span>
+                            {% elif inquiry.status == 'quoted' %}
+                            <span class="badge bg-success">Quoted</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="mb-3">
+                    <strong>Description:</strong>
+                    <p class="mt-2">{{ inquiry.inquiry_description }}</p>
+                </div>
+
+                {% if inquiry.logo_file_url %}
+                <div class="mb-3">
+                    <strong>Logo File:</strong>
+                    <p class="mt-2">
+                        <i class="bi bi-paperclip me-2"></i>
+                        <a href="{{ inquiry.logo_file_url }}" target="_blank">{{ inquiry.logo_file_url }}</a>
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-plus-circle me-2"></i>Create Quotation Request</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'admin-quotation-request-create' inquiry.id %}">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="product" class="form-label">Product <span class="text-danger">*</span></label>
+                        <select class="form-select" id="product" required onchange="loadVariants()">
+                            <option value="">Select product...</option>
+                            {% for product in products %}
+                            <option value="{{ product.id }}">{{ product.product_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="variant" class="form-label">Variant <span class="text-danger">*</span></label>
+                        <select class="form-select" id="variant" required onchange="loadSizes()">
+                            <option value="">Select product first...</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="variant_size" class="form-label">Size <span class="text-danger">*</span></label>
+                        <select class="form-select" id="variant_size" name="variant_size" required>
+                            <option value="">Select variant first...</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="requested_quantity" class="form-label">Quantity <span
+                                class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="requested_quantity" name="requested_quantity"
+                            min="1" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="customization_type" class="form-label">Customization Type</label>
+                        <input type="text" class="form-control" id="customization_type" name="customization_type"
+                            placeholder="e.g., Logo embroidery">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="customization_details" class="form-label">Customization Details</label>
+                        <textarea class="form-control" id="customization_details" name="customization_details" rows="3"
+                            placeholder="Describe customization requirements..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-plus-circle me-2"></i>Create Request
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quotation Requests -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Quotation Requests</h5>
+            </div>
+            <div class="card-body">
+                {% if inquiry.quotation_requests.all %}
+                {% for quotation_request in inquiry.quotation_requests.all %}
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">
+                                Request #{{ quotation_request.id }}
+                                {% if quotation_request.status == 'pending' %}
+                                <span class="badge bg-warning ms-2">Pending</span>
+                                {% elif quotation_request.status == 'quoted' %}
+                                <span class="badge bg-success ms-2">Quoted</span>
+                                {% elif quotation_request.status == 'accepted' %}
+                                <span class="badge bg-primary ms-2">Accepted</span>
+                                {% elif quotation_request.status == 'rejected' %}
+                                <span class="badge bg-danger ms-2">Rejected</span>
+                                {% endif %}
+                            </h6>
+                            <small class="text-muted">{{ quotation_request.requested_date|date:"M d, Y" }}</small>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Product:</strong>
+                                <p class="mb-1">{{ quotation_request.variant_size.variant.product.product_name }}</p>
+                                <small class="text-muted">
+                                    {{ quotation_request.variant_size.variant.fabric.fabric_name }} -
+                                    {{ quotation_request.variant_size.variant.color.color_name }} -
+                                    {{ quotation_request.variant_size.variant.pattern.pattern_name }}
+                                </small>
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Size:</strong>
+                                <p class="mb-0">{{ quotation_request.variant_size.size.size_name }}</p>
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Quantity:</strong>
+                                <p class="mb-0">{{ quotation_request.requested_quantity }}</p>
+                            </div>
+                        </div>
+
+                        {% if quotation_request.customization_type %}
+                        <div class="mb-3">
+                            <strong>Customization:</strong>
+                            <p class="mb-1">{{ quotation_request.customization_type }}</p>
+                            {% if quotation_request.customization_details %}
+                            <small class="text-muted">{{ quotation_request.customization_details }}</small>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+
+                        <!-- Quotation Prices -->
+                        {% if quotation_request.prices.all %}
+                        <hr>
+                        <h6 class="mb-3"><i class="bi bi-currency-rupee me-2"></i>Price Quotes</h6>
+                        {% for price in quotation_request.prices.all %}
+                        <div class="card mb-2">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <strong>Unit Price:</strong>
+                                        <p class="mb-0">₹{{ price.unit_price }}</p>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <strong>Customization:</strong>
+                                        <p class="mb-0">₹{{ price.customization_charge_per_unit }}/unit</p>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <strong>Quantity:</strong>
+                                        <p class="mb-0">{{ price.quoted_quantity }}</p>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <strong>Total per unit:</strong>
+                                        <p class="mb-0">₹{{
+                                            price.unit_price|add:price.customization_charge_per_unit|floatformat:2 }}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-md-6">
+                                        <small class="text-muted">
+                                            Valid: {{ price.valid_from|date:"M d, Y" }} - {{ price.valid_until|date:"M
+                                            d, Y" }}
+                                        </small>
+                                    </div>
+                                    <div class="col-md-6 text-end">
+                                        {% if price.status == 'pending' %}
+                                        <span class="badge bg-warning">Pending</span>
+                                        <form method="post" action="{% url 'admin-quotation-price-send' price.id %}"
+                                            style="display: inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-success ms-2">
+                                                <i class="bi bi-send"></i> Send to Customer
+                                            </button>
+                                        </form>
+                                        {% elif price.status == 'sent' %}
+                                        <span class="badge bg-info">Sent</span>
+                                        {% elif price.status == 'accepted' %}
+                                        <span class="badge bg-success">Accepted</span>
+                                        {% elif price.status == 'rejected' %}
+                                        <span class="badge bg-danger">Rejected</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% else %}
+                        <!-- Provide Price Form -->
+                        <hr>
+                        <h6 class="mb-3"><i class="bi bi-currency-rupee me-2"></i>Provide Price Quote</h6>
+                        <form method="post" action="{% url 'admin-quotation-price-create' quotation_request.id %}">
+                            {% csrf_token %}
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label for="unit_price_{{ quotation_request.id }}" class="form-label">
+                                        Unit Price (₹) <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="number" step="0.01" class="form-control"
+                                        id="unit_price_{{ quotation_request.id }}" name="unit_price" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="customization_charge_{{ quotation_request.id }}" class="form-label">
+                                        Customization (₹/unit)
+                                    </label>
+                                    <input type="number" step="0.01" class="form-control"
+                                        id="customization_charge_{{ quotation_request.id }}"
+                                        name="customization_charge_per_unit" value="0">
+                                </div>
+                                <div class="col-md-2">
+                                    <label for="quoted_quantity_{{ quotation_request.id }}" class="form-label">
+                                        Quantity <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="number" class="form-control"
+                                        id="quoted_quantity_{{ quotation_request.id }}" name="quoted_quantity"
+                                        value="{{ quotation_request.requested_quantity }}" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <label for="valid_from_{{ quotation_request.id }}" class="form-label">
+                                        Valid From <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="date" class="form-control" id="valid_from_{{ quotation_request.id }}"
+                                        name="valid_from" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <label for="valid_until_{{ quotation_request.id }}" class="form-label">
+                                        Valid Until <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="date" class="form-control" id="valid_until_{{ quotation_request.id }}"
+                                        name="valid_until" required>
+                                </div>
+                                <div class="col-12">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-check-circle me-2"></i>Provide Quote
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="text-muted text-center mb-0">No quotation requests yet. Create one using the form above.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+
+    function loadVariants() {
+        const productId = document.getElementById('product').value;
+        const variantSelect = document.getElementById('variant');
+        const sizeSelect = document.getElementById('variant_size');
+
+        // Reset variant and size selects
+        variantSelect.innerHTML = '<option value="">Select variant...</option>';
+        sizeSelect.innerHTML = '<option value="">Select variant first...</option>';
+
+        if (!productId) {
+            variantSelect.innerHTML = '<option value="">Select product first...</option>';
+            return;
+        }
+
+        // Find product
+        fetch(`/api/products/${productId}/`)
+            .then(response => response.json())
+            .then(product => {
+                if (product.variants && product.variants.length > 0) {
+                    product.variants.forEach(variant => {
+                        const option = document.createElement('option');
+                        option.value = variant.id;
+                        option.textContent = `${variant.fabric.fabric_name} - ${variant.color.color_name} - ${variant.pattern.pattern_name}`;
+                        option.dataset.variant = JSON.stringify(variant);
+                        variantSelect.appendChild(option);
+                    });
+                } else {
+                    variantSelect.innerHTML = '<option value="">No variants available</option>';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading variants:', error);
+                variantSelect.innerHTML = '<option value="">Error loading variants</option>';
+            });
+    }
+
+    function loadSizes() {
+        const variantSelect = document.getElementById('variant');
+        const sizeSelect = document.getElementById('variant_size');
+
+        // Reset size select
+        sizeSelect.innerHTML = '<option value="">Select size...</option>';
+
+        const selectedOption = variantSelect.options[variantSelect.selectedIndex];
+        if (!selectedOption || !selectedOption.dataset.variant) {
+            return;
+        }
+
+        const variant = JSON.parse(selectedOption.dataset.variant);
+
+        if (variant.variant_sizes && variant.variant_sizes.length > 0) {
+            variant.variant_sizes.forEach(variantSize => {
+                const option = document.createElement('option');
+                option.value = variantSize.id;
+                option.textContent = variantSize.size.size_name;
+                sizeSelect.appendChild(option);
+            });
+        } else {
+            sizeSelect.innerHTML = '<option value="">No sizes available</option>';
+        }
+    }
+
+    // Set default dates for validity
+    document.addEventListener('DOMContentLoaded', function () {
+        const today = new Date();
+        const nextMonth = new Date(today);
+        nextMonth.setMonth(nextMonth.getMonth() + 1);
+
+        const validFromInputs = document.querySelectorAll('input[name="valid_from"]');
+        const validUntilInputs = document.querySelectorAll('input[name="valid_until"]');
+
+        validFromInputs.forEach(input => {
+            input.value = today.toISOString().split('T')[0];
+        });
+
+        validUntilInputs.forEach(input => {
+            input.value = nextMonth.toISOString().split('T')[0];
+        });
+    });
+</script>
+{% endblock %}

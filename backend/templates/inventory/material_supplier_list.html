@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+
+{% block title %}Material-Supplier Associations - Inventory{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2><i class="bi bi-link-45deg me-2"></i>Material-Supplier Associations</h2>
+            <a href="{% url 'material-supplier-create-web' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>Add New Association
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" action="{% url 'material-supplier-list-web' %}" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="material" class="form-label">Material</label>
+                        <select class="form-select" id="material" name="material">
+                            <option value="">All Materials</option>
+                            {% for material in materials %}
+                            <option value="{{ material.id }}" {% if selected_material==material.id|stringformat:"s"
+                                %}selected{% endif %}>
+                                {{ material.material_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="supplier" class="form-label">Supplier</label>
+                        <select class="form-select" id="supplier" name="supplier">
+                            <option value="">All Suppliers</option>
+                            {% for supplier in suppliers %}
+                            <option value="{{ supplier.id }}" {% if selected_supplier==supplier.id|stringformat:"s"
+                                %}selected{% endif %}>
+                                {{ supplier.supplier_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="is_preferred" class="form-label">Preferred</label>
+                        <select class="form-select" id="is_preferred" name="is_preferred">
+                            <option value="">All</option>
+                            <option value="true" {% if is_preferred %}selected{% endif %}>Preferred Only</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search me-2"></i>Filter
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Associations Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Material</th>
+                                <th>Type</th>
+                                <th>Supplier</th>
+                                <th>Supplier Price</th>
+                                <th>Min Order Qty</th>
+                                <th>Reorder Level</th>
+                                <th>Lead Time</th>
+                                <th>Preferred</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ms in material_suppliers %}
+                            <tr>
+                                <td>
+                                    <strong>{{ ms.material.material_name }}</strong>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ ms.material.material_type.material_type_name
+                                        }}</span>
+                                </td>
+                                <td>
+                                    {{ ms.supplier.supplier_name }}
+                                </td>
+                                <td>
+                                    {% if ms.supplier_price %}
+                                    ₹{{ ms.supplier_price }}
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if ms.min_order_quantity %}
+                                    {{ ms.min_order_quantity }} {{ ms.material.material_type.unit_of_measurement }}
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if ms.reorder_level %}
+                                    {{ ms.reorder_level }} {{ ms.material.material_type.unit_of_measurement }}
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if ms.lead_time_days %}
+                                    {{ ms.lead_time_days }} days
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if ms.is_preferred %}
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-star-fill me-1"></i>Preferred
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">No</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'material-supplier-edit-web' ms.id %}"
+                                            class="btn btn-sm btn-outline-primary" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                            onclick="confirmDelete({{ ms.id }}, '{{ ms.material.material_name }}', '{{ ms.supplier.supplier_name }}')"
+                                            title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="9" class="text-center text-muted py-4">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                    No associations found. <a href="{% url 'material-supplier-create-web' %}">Create
+                                        your first association</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the association between <strong id="deleteMaterialName"></strong> and
+                    <strong id="deleteSupplierName"></strong>?</p>
+                <p class="text-danger"><i class="bi bi-exclamation-triangle me-2"></i>This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete Association</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function confirmDelete(msId, materialName, supplierName) {
+        document.getElementById('deleteMaterialName').textContent = materialName;
+        document.getElementById('deleteSupplierName').textContent = supplierName;
+        document.getElementById('deleteForm').action = `/inventory/material-suppliers/${msId}/delete/`;
+        new bootstrap.Modal(document.getElementById('deleteModal')).show();
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+
+{% block title %}Submit Inquiry - Vaitikan City{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="bi bi-envelope me-2"></i>Submit Inquiry</h4>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">
+                    Have a bulk order or customization request? Fill out the form below and our team will get back to
+                    you with a quotation.
+                </p>
+
+                <form id="inquiryForm">
+                    <div class="mb-3">
+                        <label for="inquiryDescription" class="form-label">
+                            Inquiry Description <span class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control" id="inquiryDescription" rows="6"
+                            placeholder="Please describe your requirements in detail (e.g., quantity, customization needs, delivery timeline...)"
+                            required></textarea>
+                        <div class="form-text">
+                            Please provide as much detail as possible to help us prepare an accurate quotation.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="logoFile" class="form-label">
+                            Logo File <span class="text-muted">(Optional)</span>
+                        </label>
+                        <input class="form-control" type="file" id="logoFile" accept="image/*,.pdf,.ai,.eps">
+                        <div class="form-text">
+                            Upload your logo if you need customization (PNG, JPG, PDF, AI, or EPS format)
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info" role="alert">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>What happens next?</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Our team will review your inquiry within 24-48 hours</li>
+                            <li>We'll prepare a detailed quotation based on your requirements</li>
+                            <li>You'll receive the quotation via email and in your account</li>
+                            <li>You can accept or reject the quotation from your dashboard</li>
+                        </ul>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-send me-2"></i>Submit Inquiry
+                        </button>
+                        <a href="/inquiries/" class="btn btn-outline-secondary">
+                            <i class="bi bi-list me-2"></i>View My Inquiries
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Previous Inquiries -->
+        <div class="card shadow-sm mt-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Recent Inquiries</h5>
+            </div>
+            <div class="card-body" id="recentInquiriesContainer">
+                <div class="text-center py-3">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        loadRecentInquiries();
+
+        document.getElementById('inquiryForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            submitInquiry();
+        });
+    });
+
+    function submitInquiry() {
+        const description = document.getElementById('inquiryDescription').value;
+        const logoFile = document.getElementById('logoFile').files[0];
+
+        if (!description.trim()) {
+            VaitikanApp.showToast('Please provide an inquiry description', 'warning');
+            return;
+        }
+
+        VaitikanApp.showLoading('Submitting your inquiry...');
+
+        const formData = new FormData();
+        formData.append('inquiry_description', description);
+        if (logoFile) {
+            formData.append('logo_file', logoFile);
+        }
+
+        fetch('/api/support/inquiries/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: formData
+        })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => Promise.reject(err));
+                }
+                return response.json();
+            })
+            .then(data => {
+                VaitikanApp.hideLoading();
+                VaitikanApp.showToast('Inquiry submitted successfully! We will get back to you soon.', 'success');
+                document.getElementById('inquiryForm').reset();
+                loadRecentInquiries();
+            })
+            .catch(error => {
+                VaitikanApp.hideLoading();
+                const message = error.detail || error.message || 'Failed to submit inquiry';
+                VaitikanApp.showToast(message, 'error');
+            });
+    }
+
+    function loadRecentInquiries() {
+        fetch('/api/support/inquiries/', {
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+            .then(response => response.json())
+            .then(inquiries => {
+                renderRecentInquiries(inquiries.slice(0, 5)); // Show only 5 most recent
+            })
+            .catch(error => {
+                console.error('Error loading inquiries:', error);
+                document.getElementById('recentInquiriesContainer').innerHTML = `
+            <p class="text-muted text-center mb-0">No previous inquiries found.</p>
+        `;
+            });
+    }
+
+    function renderRecentInquiries(inquiries) {
+        const container = document.getElementById('recentInquiriesContainer');
+
+        if (!inquiries || inquiries.length === 0) {
+            container.innerHTML = `
+            <p class="text-muted text-center mb-0">No previous inquiries found.</p>
+        `;
+            return;
+        }
+
+        let html = '<div class="list-group">';
+        inquiries.forEach(inquiry => {
+            const date = new Date(inquiry.inquiry_date).toLocaleDateString('en-IN', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+
+            const statusBadgeClass = {
+                'pending': 'bg-warning',
+                'reviewed': 'bg-info',
+                'quoted': 'bg-success'
+            }[inquiry.status] || 'bg-secondary';
+
+            html += `
+            <div class="list-group-item">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">Inquiry #${inquiry.id}</h6>
+                        <p class="mb-1 text-muted small">${inquiry.inquiry_description.substring(0, 100)}${inquiry.inquiry_description.length > 100 ? '...' : ''}</p>
+                        <small class="text-muted">Submitted on ${date}</small>
+                    </div>
+                    <span class="badge ${statusBadgeClass}">${inquiry.status.toUpperCase()}</span>
+                </div>
+            </div>
+        `;
+        });
+        html += '</div>';
+
+        container.innerHTML = html;
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+{% endblock %}

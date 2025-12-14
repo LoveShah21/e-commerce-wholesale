@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+
+{% block title %}Suppliers - Inventory{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2><i class="bi bi-truck me-2"></i>Suppliers</h2>
+            <a href="{% url 'supplier-create-web' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>Add New Supplier
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Search -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" action="{% url 'supplier-list-web' %}" class="row g-3">
+                    <div class="col-md-10">
+                        <label for="search" class="form-label">Search</label>
+                        <input type="text" class="form-control" id="search" name="search"
+                            placeholder="Search by supplier name, contact person, or email..."
+                            value="{{ search_query }}">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search me-2"></i>Search
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Suppliers Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Supplier Name</th>
+                                <th>Contact Person</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>City</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for supplier in suppliers %}
+                            <tr>
+                                <td>
+                                    <strong>{{ supplier.supplier_name }}</strong>
+                                </td>
+                                <td>
+                                    {{ supplier.contact_person|default:"-" }}
+                                </td>
+                                <td>
+                                    {% if supplier.email %}
+                                    <a href="mailto:{{ supplier.email }}">{{ supplier.email }}</a>
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if supplier.phone %}
+                                    <a href="tel:{{ supplier.phone }}">{{ supplier.phone }}</a>
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ supplier.city.city_name|default:"-" }}
+                                </td>
+                                <td>
+                                    <small>{{ supplier.created_at|date:"M d, Y" }}</small>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'supplier-edit-web' supplier.id %}"
+                                            class="btn btn-sm btn-outline-primary" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                            onclick="confirmDelete({{ supplier.id }}, '{{ supplier.supplier_name }}')"
+                                            title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                    No suppliers found. <a href="{% url 'supplier-create-web' %}">Add your first
+                                        supplier</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong id="deleteSupplierName"></strong>?</p>
+                <p class="text-danger"><i class="bi bi-exclamation-triangle me-2"></i>This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete Supplier</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function confirmDelete(supplierId, supplierName) {
+        document.getElementById('deleteSupplierName').textContent = supplierName;
+        document.getElementById('deleteForm').action = `/inventory/suppliers/${supplierId}/delete/`;
+        new bootstrap.Modal(document.getElementById('deleteModal')).show();
+    }
+</script>
+{% endblock %}

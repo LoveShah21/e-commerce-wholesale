@@ -1,0 +1,261 @@
+{% extends 'base.html' %}
+
+{% block title %}Raw Materials - Inventory{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2><i class="bi bi-boxes me-2"></i>Raw Materials</h2>
+            <a href="{% url 'material-create-web' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>Add New Material
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Search and Filters -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" action="{% url 'material-list-web' %}" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="search" class="form-label">Search</label>
+                        <input type="text" class="form-control" id="search" name="search"
+                            placeholder="Search by material name..." value="{{ search_query }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="material_type" class="form-label">Material Type</label>
+                        <select class="form-select" id="material_type" name="material_type">
+                            <option value="">All Types</option>
+                            {% for type in material_types %}
+                            <option value="{{ type.id }}" {% if selected_type==type.id|stringformat:"s" %}selected{%
+                                endif %}>
+                                {{ type.material_type_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="alerts_only" class="form-label">Filter</label>
+                        <select class="form-select" id="alerts_only" name="alerts_only">
+                            <option value="">All Materials</option>
+                            <option value="true" {% if alerts_only %}selected{% endif %}>Low Stock Only</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search me-2"></i>Search
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Materials Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Material Name</th>
+                                <th>Type</th>
+                                <th>Unit Price</th>
+                                <th>Current Quantity</th>
+                                <th>Status</th>
+                                <th>Last Updated</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for material in materials %}
+                            <tr {% if material.is_below_reorder %}class="table-warning" {% endif %}>
+                                <td>
+                                    <strong>{{ material.material_name }}</strong>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ material.material_type_name }}</span>
+                                </td>
+                                <td>
+                                    ₹{{ material.unit_price }}
+                                </td>
+                                <td>
+                                    {{ material.current_quantity }} {{ material.unit_of_measurement }}
+                                </td>
+                                <td>
+                                    {% if material.is_below_reorder %}
+                                    <span class="badge bg-danger">
+                                        <i class="bi bi-exclamation-triangle me-1"></i>Low Stock
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle me-1"></i>In Stock
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small>{{ material.last_updated|date:"M d, Y H:i" }}</small>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                            onclick="showUpdateQuantityModal({{ material.id }}, '{{ material.material_name }}', {{ material.current_quantity }})"
+                                            title="Update Quantity">
+                                            <i class="bi bi-arrow-repeat"></i>
+                                        </button>
+                                        <a href="{% url 'material-edit-web' material.id %}"
+                                            class="btn btn-sm btn-outline-secondary" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                            onclick="confirmDelete({{ material.id }}, '{{ material.material_name }}')"
+                                            title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% if material.is_below_reorder and material.reorder_info %}
+                            <tr class="table-warning">
+                                <td colspan="7">
+                                    <div class="alert alert-warning mb-0 py-2">
+                                        <i class="bi bi-exclamation-triangle me-2"></i>
+                                        <strong>Reorder Alert:</strong> Current quantity ({{ material.current_quantity
+                                        }}) is below reorder level ({{ material.reorder_info.reorder_level }}).
+                                        Shortage: {{ material.reorder_info.shortage }} {{ material.unit_of_measurement
+                                        }}.
+                                        {% if material.reorder_info.preferred_supplier %}
+                                        <br><strong>Preferred Supplier:</strong> {{
+                                        material.reorder_info.preferred_supplier.name }}
+                                        (Price: ₹{{ material.reorder_info.preferred_supplier.price }}, Min Order: {{
+                                        material.reorder_info.preferred_supplier.min_order_qty }}, Lead Time: {{
+                                        material.reorder_info.preferred_supplier.lead_time_days }} days)
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                    No materials found. <a href="{% url 'material-create-web' %}">Add your first
+                                        material</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Update Quantity Modal -->
+<div class="modal fade" id="updateQuantityModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Update Material Quantity</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="updateQuantityForm" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <p>Update quantity for <strong id="updateMaterialName"></strong></p>
+                    <div class="mb-3">
+                        <label for="current_quantity" class="form-label">Current Quantity</label>
+                        <input type="number" step="0.01" class="form-control" id="current_quantity"
+                            name="current_quantity" required>
+                    </div>
+                    <div id="updateError" class="alert alert-danger d-none"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Quantity</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong id="deleteMaterialName"></strong>?</p>
+                <p class="text-danger"><i class="bi bi-exclamation-triangle me-2"></i>This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete Material</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function showUpdateQuantityModal(materialId, materialName, currentQuantity) {
+        document.getElementById('updateMaterialName').textContent = materialName;
+        document.getElementById('current_quantity').value = currentQuantity;
+        document.getElementById('updateQuantityForm').action = `/inventory/materials/${materialId}/quantity/`;
+        document.getElementById('updateError').classList.add('d-none');
+        new bootstrap.Modal(document.getElementById('updateQuantityModal')).show();
+    }
+
+    function confirmDelete(materialId, materialName) {
+        document.getElementById('deleteMaterialName').textContent = materialName;
+        document.getElementById('deleteForm').action = `/inventory/materials/${materialId}/delete/`;
+        new bootstrap.Modal(document.getElementById('deleteModal')).show();
+    }
+
+    // Handle update quantity form submission
+    document.getElementById('updateQuantityForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        const data = {
+            current_quantity: formData.get('current_quantity')
+        };
+
+        try {
+            const response = await fetch(this.action, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                location.reload();
+            } else {
+                const error = await response.json();
+                document.getElementById('updateError').textContent = error.message || 'Failed to update quantity';
+                document.getElementById('updateError').classList.remove('d-none');
+            }
+        } catch (error) {
+            document.getElementById('updateError').textContent = 'An error occurred. Please try again.';
+            document.getElementById('updateError').classList.remove('d-none');
+        }
+    });
+</script>
+{% endblock %}

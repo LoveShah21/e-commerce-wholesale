@@ -1,0 +1,397 @@
+{% extends 'base.html' %}
+
+{% block title %}Order Tracking - Vaitikan City{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/">Home</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'order-list-web' %}">My Orders</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Order Tracking</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-box-seam me-2"></i>Order Details</h5>
+            </div>
+            <div class="card-body" id="orderDetailsContainer">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Order Items -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">Order Items</h5>
+            </div>
+            <div class="card-body" id="orderItemsContainer">
+                <div class="text-center py-3">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delivery Address -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-geo-alt me-2"></i>Delivery Address</h5>
+            </div>
+            <div class="card-body" id="deliveryAddressContainer">
+                <div class="text-center py-3">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Order Status Timeline -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>Order Status</h5>
+            </div>
+            <div class="card-body" id="orderStatusContainer">
+                <div class="text-center py-3">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Information -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-credit-card me-2"></i>Payment</h5>
+            </div>
+            <div class="card-body" id="paymentContainer">
+                <div class="text-center py-3">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const orderId = window.location.pathname.split('/').filter(Boolean).pop();
+
+    document.addEventListener('DOMContentLoaded', function () {
+        loadOrderDetails();
+    });
+
+    function loadOrderDetails() {
+        fetch(`/api/orders/${orderId}/`, {
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Order not found');
+                }
+                return response.json();
+            })
+            .then(order => {
+                renderOrderDetails(order);
+                renderOrderItems(order.items);
+                renderDeliveryAddress(order.delivery_address);
+                renderOrderStatus(order.status);
+                renderPaymentInfo(order);
+            })
+            .catch(error => {
+                console.error('Error loading order:', error);
+                document.getElementById('orderDetailsContainer').innerHTML = `
+            <div class="alert alert-danger" role="alert">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                Failed to load order details. Please try again.
+            </div>
+        `;
+            });
+    }
+
+    function renderOrderDetails(order) {
+        const container = document.getElementById('orderDetailsContainer');
+        const orderDate = new Date(order.created_at).toLocaleDateString('en-IN', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+
+        const statusBadgeClass = {
+            'pending': 'bg-warning',
+            'confirmed': 'bg-info',
+            'processing': 'bg-primary',
+            'dispatched': 'bg-success',
+            'delivered': 'bg-success',
+            'cancelled': 'bg-danger'
+        }[order.status] || 'bg-secondary';
+
+        container.innerHTML = `
+        <div class="row">
+            <div class="col-md-3">
+                <p class="mb-1"><strong>Order ID:</strong></p>
+                <p class="text-muted">#${order.id}</p>
+            </div>
+            <div class="col-md-3">
+                <p class="mb-1"><strong>Order Date:</strong></p>
+                <p class="text-muted">${orderDate}</p>
+            </div>
+            <div class="col-md-3">
+                <p class="mb-1"><strong>Status:</strong></p>
+                <span class="badge ${statusBadgeClass}">${order.status.toUpperCase()}</span>
+            </div>
+            <div class="col-md-3">
+                <p class="mb-1"><strong>Total Amount:</strong></p>
+                <p class="text-success fs-5 mb-0">₹${parseFloat(order.total_amount).toFixed(2)}</p>
+            </div>
+        </div>
+        ${order.notes ? `
+            <hr>
+            <p class="mb-1"><strong>Order Notes:</strong></p>
+            <p class="text-muted">${order.notes}</p>
+        ` : ''}
+    `;
+    }
+
+    function renderOrderItems(items) {
+        const container = document.getElementById('orderItemsContainer');
+
+        let html = '<div class="table-responsive"><table class="table align-middle">';
+        html += '<thead><tr><th>Product</th><th>Quantity</th><th>Price</th><th>Total</th></tr></thead>';
+        html += '<tbody>';
+
+        items.forEach(item => {
+            const product = item.variant_size.variant.product;
+            const variant = item.variant_size.variant;
+            const size = item.variant_size.size;
+            const price = parseFloat(item.snapshot_unit_price);
+            const total = price * item.quantity;
+
+            html += `
+            <tr>
+                <td>
+                    <div>
+                        <h6 class="mb-1">${product.product_name}</h6>
+                        <small class="text-muted">
+                            ${variant.fabric.fabric_name} - ${variant.color.color_name}<br>
+                            Size: ${size.size_code}
+                        </small>
+                    </div>
+                </td>
+                <td>${item.quantity}</td>
+                <td>₹${price.toFixed(2)}</td>
+                <td><strong>₹${total.toFixed(2)}</strong></td>
+            </tr>
+        `;
+        });
+
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
+    }
+
+    function renderDeliveryAddress(address) {
+        const container = document.getElementById('deliveryAddressContainer');
+
+        container.innerHTML = `
+        <address class="mb-0">
+            <strong>${address.address_line_1}</strong><br>
+            ${address.address_line_2 ? address.address_line_2 + '<br>' : ''}
+            ${address.city.city_name}, ${address.state.state_name}<br>
+            ${address.postal_code.postal_code}<br>
+            ${address.country.country_name}
+        </address>
+    `;
+    }
+
+    function renderOrderStatus(status) {
+        const container = document.getElementById('orderStatusContainer');
+
+        const statuses = [
+            { key: 'pending', label: 'Order Placed', icon: 'check-circle' },
+            { key: 'confirmed', label: 'Confirmed', icon: 'check-circle-fill' },
+            { key: 'processing', label: 'Processing', icon: 'gear-fill' },
+            { key: 'dispatched', label: 'Dispatched', icon: 'truck' },
+            { key: 'delivered', label: 'Delivered', icon: 'box-seam' }
+        ];
+
+        const currentIndex = statuses.findIndex(s => s.key === status);
+
+        let html = '<div class="timeline">';
+        statuses.forEach((s, index) => {
+            const isCompleted = index <= currentIndex;
+            const isCurrent = index === currentIndex;
+
+            html += `
+            <div class="timeline-item ${isCompleted ? 'completed' : ''} ${isCurrent ? 'current' : ''}">
+                <div class="timeline-marker">
+                    <i class="bi bi-${s.icon}"></i>
+                </div>
+                <div class="timeline-content">
+                    <h6 class="mb-0">${s.label}</h6>
+                </div>
+            </div>
+        `;
+        });
+        html += '</div>';
+
+        container.innerHTML = html;
+    }
+
+    function renderPaymentInfo(order) {
+        const container = document.getElementById('paymentContainer');
+        const totalAmount = parseFloat(order.total_amount);
+        const advanceAmount = totalAmount * 0.5;
+        const finalAmount = totalAmount * 0.5;
+
+        // This is simplified - in reality, you'd fetch payment records from the API
+        container.innerHTML = `
+        <div class="mb-3">
+            <div class="d-flex justify-content-between mb-2">
+                <span>Total Amount:</span>
+                <strong>₹${totalAmount.toFixed(2)}</strong>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+                <span>Advance Payment (50%):</span>
+                <span class="text-success">₹${advanceAmount.toFixed(2)}</span>
+            </div>
+            <div class="d-flex justify-content-between">
+                <span>Final Payment (50%):</span>
+                <span class="${order.status === 'delivered' ? 'text-success' : 'text-muted'}">
+                    ₹${finalAmount.toFixed(2)}
+                </span>
+            </div>
+        </div>
+        ${order.status === 'pending' ? `
+            <div class="alert alert-warning" role="alert">
+                <small><i class="bi bi-info-circle me-1"></i>Advance payment pending</small>
+            </div>
+        ` : ''}
+        ${order.status === 'dispatched' ? `
+            <div class="alert alert-info" role="alert">
+                <small><i class="bi bi-info-circle me-1"></i>Final payment required before delivery</small>
+            </div>
+            <button class="btn btn-primary w-100" onclick="payFinalAmount()">
+                <i class="bi bi-credit-card me-2"></i>Pay Final Amount
+            </button>
+        ` : ''}
+    `;
+    }
+
+    function payFinalAmount() {
+        VaitikanApp.showToast('Payment integration coming soon', 'info');
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+
+<style>
+    .timeline {
+        position: relative;
+        padding-left: 40px;
+    }
+
+    .timeline-item {
+        position: relative;
+        padding-bottom: 30px;
+    }
+
+    .timeline-item:not(:last-child)::before {
+        content: '';
+        position: absolute;
+        left: -25px;
+        top: 30px;
+        width: 2px;
+        height: calc(100% - 10px);
+        background-color: #dee2e6;
+    }
+
+    .timeline-item.completed:not(:last-child)::before {
+        background-color: #198754;
+    }
+
+    .timeline-marker {
+        position: absolute;
+        left: -35px;
+        top: 0;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background-color: #dee2e6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+    }
+
+    .timeline-item.completed .timeline-marker {
+        background-color: #198754;
+    }
+
+    .timeline-item.current .timeline-marker {
+        background-color: #0d6efd;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+
+        0%,
+        100% {
+            box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.7);
+        }
+
+        50% {
+            box-shadow: 0 0 0 10px rgba(13, 110, 253, 0);
+        }
+    }
+
+    .timeline-content h6 {
+        font-size: 0.9rem;
+    }
+
+    .timeline-item.completed .timeline-content h6 {
+        color: #198754;
+    }
+
+    .timeline-item.current .timeline-content h6 {
+        color: #0d6efd;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}

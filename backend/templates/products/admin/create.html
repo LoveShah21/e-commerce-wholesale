@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Product - Admin{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'dashboard-web' %}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'admin-product-list' %}">Products</a></li>
+                <li class="breadcrumb-item active">Create Product</li>
+            </ol>
+        </nav>
+        <h2><i class="bi bi-plus-circle me-2"></i>Create New Product</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Product Information</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'admin-product-create' %}">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="product_name" class="form-label">Product Name <span
+                                class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="product_name" name="product_name"
+                            value="{{ form_data.product_name }}" required>
+                        <div class="form-text">Enter a descriptive name for the product</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description"
+                            rows="4">{{ form_data.description }}</textarea>
+                        <div class="form-text">Provide a detailed description of the product</div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'admin-product-list' %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-2"></i>Create Product
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Instructions</h5>
+            </div>
+            <div class="card-body">
+                <ol class="mb-0">
+                    <li class="mb-2">Enter the product name and description</li>
+                    <li class="mb-2">Click "Create Product" to save</li>
+                    <li class="mb-2">After creation, you'll be able to:
+                        <ul>
+                            <li>Add product images</li>
+                            <li>Create variants (fabric, color, pattern combinations)</li>
+                            <li>Add sizes and manage stock</li>
+                        </ul>
+                    </li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

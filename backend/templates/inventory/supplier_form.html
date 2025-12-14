@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if supplier %}Edit Supplier{% else %}Add Supplier{% endif %} - Inventory{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'supplier-list-web' %}">Suppliers</a></li>
+                <li class="breadcrumb-item active">{% if supplier %}Edit{% else %}Add{% endif %} Supplier</li>
+            </ol>
+        </nav>
+        <h2><i class="bi bi-truck me-2"></i>{% if supplier %}Edit Supplier{% else %}Add New Supplier{% endif %}</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="post"
+                    action="{% if supplier %}{% url 'supplier-edit-web' supplier.id %}{% else %}{% url 'supplier-create-web' %}{% endif %}">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="supplier_name" class="form-label">Supplier Name <span
+                                class="text-danger">*</span></label>
+                        <input type="text" class="form-control {% if errors.supplier_name %}is-invalid{% endif %}"
+                            id="supplier_name" name="supplier_name" value="{{ supplier.supplier_name|default:'' }}"
+                            required>
+                        {% if errors.supplier_name %}
+                        <div class="invalid-feedback">{{ errors.supplier_name }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="contact_person" class="form-label">Contact Person</label>
+                        <input type="text" class="form-control {% if errors.contact_person %}is-invalid{% endif %}"
+                            id="contact_person" name="contact_person" value="{{ supplier.contact_person|default:'' }}">
+                        {% if errors.contact_person %}
+                        <div class="invalid-feedback">{{ errors.contact_person }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email</label>
+                                <input type="email" class="form-control {% if errors.email %}is-invalid{% endif %}"
+                                    id="email" name="email" value="{{ supplier.email|default:'' }}">
+                                {% if errors.email %}
+                                <div class="invalid-feedback">{{ errors.email }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="phone" class="form-label">Phone</label>
+                                <input type="tel" class="form-control {% if errors.phone %}is-invalid{% endif %}"
+                                    id="phone" name="phone" value="{{ supplier.phone|default:'' }}">
+                                {% if errors.phone %}
+                                <div class="invalid-feedback">{{ errors.phone }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="city" class="form-label">City</label>
+                        <select class="form-select {% if errors.city %}is-invalid{% endif %}" id="city" name="city">
+                            <option value="">Select City</option>
+                            {% for city in cities %}
+                            <option value="{{ city.id }}" {% if supplier and supplier.city and supplier.city.id==city.id
+                                %}selected{% endif %}>
+                                {{ city.city_name }}, {{ city.state.state_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        {% if errors.city %}
+                        <div class="invalid-feedback">{{ errors.city }}</div>
+                        {% endif %}
+                    </div>
+
+                    {% if form_error %}
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>{{ form_error }}
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'supplier-list-web' %}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save me-2"></i>{% if supplier %}Update{% else %}Create{% endif %} Supplier
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Information</h6>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted">
+                    <strong>Supplier Name:</strong> Enter the company or business name of the supplier.
+                </p>
+                <p class="small text-muted">
+                    <strong>Contact Person:</strong> Name of the primary contact at the supplier.
+                </p>
+                <p class="small text-muted">
+                    <strong>Email & Phone:</strong> Contact information for placing orders and inquiries.
+                </p>
+                <p class="small text-muted">
+                    <strong>City:</strong> Location of the supplier for logistics planning.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

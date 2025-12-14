@@ -30,23 +30,31 @@
                     </span>
                 </td>
                 <td>
-                    <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse"
+                    <a href="{% url 'order-tracking-web' order.id %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-eye me-1"></i>View Details
+                    </a>
+                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse"
                         data-bs-target="#order{{ order.id }}">
-                        View Items
+                        <i class="bi bi-list me-1"></i>Items
                     </button>
                     <!-- Collapsible Item Details -->
                     <div class="collapse mt-2" id="order{{ order.id }}">
                         <div class="card card-body">
-                            <ul class="list-unstyled">
+                            <ul class="list-unstyled mb-0">
                                 {% for item in order.items.all %}
-                                <li>
-                                    {{ item.quantity }}x {{ item.variant_size.variant.product.product_name }}
-                                    ({{ item.variant_size.variant.color.color_name }} - {{
-                                    item.variant_size.size.size_code }})
+                                <li class="mb-1">
+                                    <strong>{{ item.quantity }}x</strong> {{
+                                    item.variant_size.variant.product.product_name }}
+                                    <br>
+                                    <small class="text-muted">
+                                        {{ item.variant_size.variant.color.color_name }} - {{
+                                        item.variant_size.size.size_code }}
+                                    </small>
                                 </li>
                                 {% endfor %}
                             </ul>
                             {% if order.notes %}
+                            <hr class="my-2">
                             <p class="mb-0 text-muted"><strong>Note:</strong> {{ order.notes }}</p>
                             {% endif %}
                         </div>

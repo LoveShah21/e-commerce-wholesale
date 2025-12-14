@@ -1,0 +1,137 @@
+{% load static %}
+
+<aside class="sidebar bg-light border-end" style="width: 250px; min-height: calc(100vh - 56px);">
+    <div class="d-flex flex-column h-100">
+        <div class="p-3">
+            <h6 class="text-muted text-uppercase small mb-3">Navigation</h6>
+            <ul class="nav flex-column">
+                <li class="nav-item mb-1">
+                    <a class="nav-link text-dark d-flex align-items-center" href="/dashboard/">
+                        <i class="bi bi-speedometer2 me-2"></i>
+                        Dashboard
+                    </a>
+                </li>
+
+                {% if user.user_type == 'customer' %}
+                <!-- Customer Navigation -->
+                <li class="nav-item mb-1">
+                    <a class="nav-link text-dark d-flex align-items-center" href="/products/">
+                        <i class="bi bi-grid me-2"></i>
+                        Products
+                    </a>
+                </li>
+                <li class="nav-item mb-1">
+                    <a class="nav-link text-dark d-flex align-items-center" href="{% url 'cart-web' %}">
+                        <i class="bi bi-cart3 me-2"></i>
+                        Shopping Cart
+                    </a>
+                </li>
+                <li class="nav-item mb-1">
+                    <a class="nav-link text-dark d-flex align-items-center" href="{% url 'order-list-web' %}">
+                        <i class="bi bi-box-seam me-2"></i>
+                        My Orders
+                    </a>
+                </li>
+                <li class="nav-item mb-1">
+                    <a class="nav-link text-dark d-flex align-items-center" href="{% url 'inquiry-web' %}">
+                        <i class="bi bi-envelope me-2"></i>
+                        Submit Inquiry
+                    </a>
+                </li>
+                <li class="nav-item mb-1">
+                    <a class="nav-link text-dark d-flex align-items-center" href="{% url 'feedback-web' %}">
+                        <i class="bi bi-star me-2"></i>
+                        Submit Feedback
+                    </a>
+                </li>
+                {% endif %}
+
+                {% if user.user_type == 'admin' %}
+                <!-- Admin Navigation -->
+                <li class="nav-item mb-1">
+                    <a class="nav-link text-dark d-flex align-items-center" href="{% url 'admin-product-list' %}">
+                        <i class="bi bi-box me-2"></i>
+                        Products
+                    </a>
+                </li>
+                <li class="nav-item mb-1">
+                    <a class="nav-link text-dark d-flex align-items-center" href="/admin/orders/">
+                        <i class="bi bi-receipt me-2"></i>
+                        Orders
+                    </a>
+                </li>
+                <li class="nav-item mb-1">
+                    <a class="nav-link text-dark d-flex align-items-center" href="/admin/inquiries/">
+                        <i class="bi bi-chat-square-text me-2"></i>
+                        Inquiries
+                    </a>
+                </li>
+                <li class="nav-item mb-1">
+                    <a class="nav-link text-dark d-flex align-items-center" href="{% url 'admin-complaint-list' %}">
+                        <i class="bi bi-flag me-2"></i>
+                        Complaints
+                    </a>
+                </li>
+                <li class="nav-item mb-1">
+                    <a class="nav-link text-dark d-flex align-items-center" href="{% url 'admin-feedback-list' %}">
+                        <i class="bi bi-chat-left-text me-2"></i>
+                        Feedback
+                    </a>
+                </li>
+                <li class="nav-item mb-1">
+                    <a class="nav-link text-dark d-flex align-items-center" href="{% url 'inventory-overview-web' %}">
+                        <i class="bi bi-boxes me-2"></i>
+                        Inventory
+                    </a>
+                </li>
+                <li class="nav-item mb-1">
+                    <a class="nav-link text-dark d-flex align-items-center" href="/admin/users/">
+                        <i class="bi bi-people me-2"></i>
+                        Users
+                    </a>
+                </li>
+                <li class="nav-item mb-1">
+                    <a class="nav-link text-dark d-flex align-items-center" href="/admin/reports/">
+                        <i class="bi bi-graph-up me-2"></i>
+                        Reports
+                    </a>
+                </li>
+                {% endif %}
+
+                {% if user.user_type == 'operator' %}
+                <!-- Operator Navigation -->
+                <li class="nav-item mb-1">
+                    <a class="nav-link text-dark d-flex align-items-center" href="/manufacturing/">
+                        <i class="bi bi-gear me-2"></i>
+                        Manufacturing
+                    </a>
+                </li>
+                <li class="nav-item mb-1">
+                    <a class="nav-link text-dark d-flex align-items-center" href="{% url 'inventory-overview-web' %}">
+                        <i class="bi bi-boxes me-2"></i>
+                        Inventory
+                    </a>
+                </li>
+                <li class="nav-item mb-1">
+                    <a class="nav-link text-dark d-flex align-items-center" href="/orders/">
+                        <i class="bi bi-receipt me-2"></i>
+                        Orders
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+
+        <div class="mt-auto p-3 border-top">
+            <div class="d-flex align-items-center">
+                <div class="flex-shrink-0">
+                    <i class="bi bi-person-circle fs-3 text-primary"></i>
+                </div>
+                <div class="flex-grow-1 ms-3">
+                    <h6 class="mb-0 small">{{ user.full_name }}</h6>
+                    <small class="text-muted">{{ user.get_user_type_display }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</aside>

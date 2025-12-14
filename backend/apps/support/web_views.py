@@ -1,0 +1,11 @@
+from django.shortcuts import render
+from django.views import View
+from django.contrib.auth.mixins import LoginRequiredMixin
+
+class InquirySubmissionView(LoginRequiredMixin, View):
+    def get(self, request):
+        return render(request, 'support/inquiry.html')
+
+class FeedbackSubmissionView(LoginRequiredMixin, View):
+    def get(self, request):
+        return render(request, 'support/feedback.html')

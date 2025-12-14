@@ -1,0 +1,297 @@
+{% extends 'base.html' %}
+
+{% block title %}Submit Feedback - Vaitikan City{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card shadow-sm">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0"><i class="bi bi-star me-2"></i>Submit Feedback</h4>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">
+                    We value your feedback! Please share your experience with your recent order.
+                </p>
+
+                <form id="feedbackForm">
+                    <div class="mb-4">
+                        <label for="orderId" class="form-label">
+                            Select Order <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="orderId" required>
+                            <option value="">Loading orders...</option>
+                        </select>
+                        <div class="form-text">
+                            Select the order you want to provide feedback for
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">
+                            Rating <span class="text-danger">*</span>
+                        </label>
+                        <div class="rating-container">
+                            <div class="btn-group" role="group" aria-label="Rating">
+                                <input type="radio" class="btn-check" name="rating" id="rating1" value="1" required>
+                                <label class="btn btn-outline-warning" for="rating1">
+                                    <i class="bi bi-star-fill"></i> 1
+                                </label>
+
+                                <input type="radio" class="btn-check" name="rating" id="rating2" value="2">
+                                <label class="btn btn-outline-warning" for="rating2">
+                                    <i class="bi bi-star-fill"></i> 2
+                                </label>
+
+                                <input type="radio" class="btn-check" name="rating" id="rating3" value="3">
+                                <label class="btn btn-outline-warning" for="rating3">
+                                    <i class="bi bi-star-fill"></i> 3
+                                </label>
+
+                                <input type="radio" class="btn-check" name="rating" id="rating4" value="4">
+                                <label class="btn btn-outline-warning" for="rating4">
+                                    <i class="bi bi-star-fill"></i> 4
+                                </label>
+
+                                <input type="radio" class="btn-check" name="rating" id="rating5" value="5">
+                                <label class="btn btn-outline-warning" for="rating5">
+                                    <i class="bi bi-star-fill"></i> 5
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-text">
+                            Rate your experience from 1 (Poor) to 5 (Excellent)
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="feedbackDescription" class="form-label">
+                            Feedback <span class="text-muted">(Optional)</span>
+                        </label>
+                        <textarea class="form-control" id="feedbackDescription" rows="5"
+                            placeholder="Tell us about your experience with the product quality, delivery, and service..."></textarea>
+                        <div class="form-text">
+                            Your detailed feedback helps us improve our products and services
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info" role="alert">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Thank you for your feedback!</strong>
+                        <p class="mb-0 mt-2">
+                            Your feedback is valuable to us and helps us serve you better. We review all feedback to
+                            continuously improve our products and services.
+                        </p>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="bi bi-send me-2"></i>Submit Feedback
+                        </button>
+                        <a href="/orders/" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-2"></i>Back to Orders
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Previous Feedback -->
+        <div class="card shadow-sm mt-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="bi bi-chat-left-text me-2"></i>Your Previous Feedback</h5>
+            </div>
+            <div class="card-body" id="previousFeedbackContainer">
+                <div class="text-center py-3">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        loadDeliveredOrders();
+        loadPreviousFeedback();
+
+        document.getElementById('feedbackForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            submitFeedback();
+        });
+    });
+
+    function loadDeliveredOrders() {
+        fetch('/api/orders/', {
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+            .then(response => response.json())
+            .then(orders => {
+                const deliveredOrders = orders.filter(order => order.status === 'delivered');
+                renderOrderOptions(deliveredOrders);
+            })
+            .catch(error => {
+                console.error('Error loading orders:', error);
+                document.getElementById('orderId').innerHTML = '<option value="">No delivered orders found</option>';
+            });
+    }
+
+    function renderOrderOptions(orders) {
+        const select = document.getElementById('orderId');
+
+        if (!orders || orders.length === 0) {
+            select.innerHTML = '<option value="">No delivered orders available for feedback</option>';
+            return;
+        }
+
+        let html = '<option value="">Select an order...</option>';
+        orders.forEach(order => {
+            const date = new Date(order.created_at).toLocaleDateString('en-IN', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+            html += `<option value="${order.id}">Order #${order.id} - ${date} (₹${parseFloat(order.total_amount).toFixed(2)})</option>`;
+        });
+
+        select.innerHTML = html;
+    }
+
+    function submitFeedback() {
+        const orderId = document.getElementById('orderId').value;
+        const rating = document.querySelector('input[name="rating"]:checked')?.value;
+        const description = document.getElementById('feedbackDescription').value;
+
+        if (!orderId) {
+            VaitikanApp.showToast('Please select an order', 'warning');
+            return;
+        }
+
+        if (!rating) {
+            VaitikanApp.showToast('Please provide a rating', 'warning');
+            return;
+        }
+
+        VaitikanApp.showLoading('Submitting your feedback...');
+
+        const feedbackData = {
+            order: parseInt(orderId),
+            rating: parseInt(rating),
+            feedback_description: description || null
+        };
+
+        fetch('/api/support/feedback/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(feedbackData)
+        })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => Promise.reject(err));
+                }
+                return response.json();
+            })
+            .then(data => {
+                VaitikanApp.hideLoading();
+                VaitikanApp.showToast('Thank you for your feedback!', 'success');
+                document.getElementById('feedbackForm').reset();
+                loadPreviousFeedback();
+            })
+            .catch(error => {
+                VaitikanApp.hideLoading();
+                const message = error.detail || error.message || 'Failed to submit feedback';
+                VaitikanApp.showToast(message, 'error');
+            });
+    }
+
+    function loadPreviousFeedback() {
+        fetch('/api/support/feedback/list/', {
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+            .then(response => response.json())
+            .then(feedbacks => {
+                renderPreviousFeedback(feedbacks);
+            })
+            .catch(error => {
+                console.error('Error loading feedback:', error);
+                document.getElementById('previousFeedbackContainer').innerHTML = `
+            <p class="text-muted text-center mb-0">No previous feedback found.</p>
+        `;
+            });
+    }
+
+    function renderPreviousFeedback(feedbacks) {
+        const container = document.getElementById('previousFeedbackContainer');
+
+        if (!feedbacks || feedbacks.length === 0) {
+            container.innerHTML = `
+            <p class="text-muted text-center mb-0">You haven't submitted any feedback yet.</p>
+        `;
+            return;
+        }
+
+        let html = '<div class="list-group">';
+        feedbacks.forEach(feedback => {
+            const date = new Date(feedback.feedback_date).toLocaleDateString('en-IN', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+
+            const stars = '★'.repeat(feedback.rating) + '☆'.repeat(5 - feedback.rating);
+
+            html += `
+            <div class="list-group-item">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <h6 class="mb-1">Order #${feedback.order.id}</h6>
+                        <div class="text-warning mb-1" style="font-size: 1.2rem;">${stars}</div>
+                        <small class="text-muted">Submitted on ${date}</small>
+                    </div>
+                </div>
+                ${feedback.feedback_description ? `
+                    <p class="mb-0 mt-2">${feedback.feedback_description}</p>
+                ` : ''}
+            </div>
+        `;
+        });
+        html += '</div>';
+
+        container.innerHTML = html;
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+
+<style>
+    .rating-container .btn-check:checked+.btn-outline-warning {
+        background-color: #ffc107;
+        border-color: #ffc107;
+        color: #000;
+    }
+</style>
+{% endblock %}

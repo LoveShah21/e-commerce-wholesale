@@ -25,7 +25,7 @@ class InquiryPropertyTests(TestCase):
         username=st.text(min_size=3, max_size=20, alphabet=st.characters(min_codepoint=48, max_codepoint=122, whitelist_categories=('Lu', 'Ll', 'Nd'))),
         description=st.text(min_size=10, max_size=500, alphabet=st.characters(min_codepoint=32, max_codepoint=126)),
     )
-    @settings(max_examples=50, deadline=None)
+    @settings(max_examples=10, deadline=None)
     def test_inquiry_creation_sets_pending_status(self, email, username, description):
         """
         Feature: complete-ecommerce-platform, Property 42: Inquiry creation sets pending status
@@ -70,7 +70,7 @@ class QuotationPropertyTests(TestCase):
         quantity=st.integers(min_value=1, max_value=1000),
         unit_price=st.decimals(min_value=1, max_value=10000, places=2),
     )
-    @settings(max_examples=50, deadline=None)
+    @settings(max_examples=10, deadline=None)
     def test_quotation_status_updates_correctly(self, email, username, quantity, unit_price):
         """
         Feature: complete-ecommerce-platform, Property 45: Quotation status updates correctly

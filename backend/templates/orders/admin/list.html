@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Orders - Admin{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-cart-check me-2"></i>Manage Orders</h2>
+        <p class="text-muted">View and manage all customer orders</p>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" action="{% url 'admin-order-list' %}" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="search" class="form-label">Search</label>
+                        <input type="text" class="form-control" id="search" name="search"
+                            placeholder="Order ID, customer name or email..." value="{{ search_query }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="status" class="form-label">Order Status</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="">All Statuses</option>
+                            {% for status_code, status_label in status_choices %}
+                            <option value="{{ status_code }}" {% if status_filter==status_code %}selected{% endif %}>
+                                {{ status_label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="payment_status" class="form-label">Payment Status</label>
+                        <select class="form-select" id="payment_status" name="payment_status">
+                            <option value="">All Payments</option>
+                            <option value="pending" {% if payment_status=='pending' %}selected{% endif %}>Pending
+                            </option>
+                            <option value="advance_paid" {% if payment_status=='advance_paid' %}selected{% endif %}>
+                                Advance Paid</option>
+                            <option value="final_paid" {% if payment_status=='final_paid' %}selected{% endif %}>Final
+                                Paid</option>
+                            <option value="fully_paid" {% if payment_status=='fully_paid' %}selected{% endif %}>Fully
+                                Paid</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="date_from" class="form-label">From Date</label>
+                        <input type="date" class="form-control" id="date_from" name="date_from" value="{{ date_from }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="date_to" class="form-label">To Date</label>
+                        <input type="date" class="form-control" id="date_to" name="date_to" value="{{ date_to }}">
+                    </div>
+                    <div class="col-md-1 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Orders Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Customer</th>
+                                <th>Order Date</th>
+                                <th>Items</th>
+                                <th>Total Amount</th>
+                                <th>Order Status</th>
+                                <th>Payment Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in orders %}
+                            <tr>
+                                <td>
+                                    <strong>#{{ order.id }}</strong>
+                                </td>
+                                <td>
+                                    <div>{{ order.user.full_name }}</div>
+                                    <small class="text-muted">{{ order.user.email }}</small>
+                                </td>
+                                <td>
+                                    {{ order.order_date|date:"M d, Y" }}<br>
+                                    <small class="text-muted">{{ order.order_date|time:"h:i A" }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ order.items.count }} item{{
+                                        order.items.count|pluralize }}</span>
+                                </td>
+                                <td>
+                                    <strong>₹{{ order.total_amount|floatformat:2 }}</strong>
+                                </td>
+                                <td>
+                                    <span class="badge 
+                                    {% if order.status == 'pending' %}bg-warning text-dark
+                                    {% elif order.status == 'confirmed' %}bg-info
+                                    {% elif order.status == 'processing' %}bg-primary
+                                    {% elif order.status == 'dispatched' %}bg-primary
+                                    {% elif order.status == 'delivered' %}bg-success
+                                    {% elif order.status == 'cancelled' %}bg-danger
+                                    {% else %}bg-secondary{% endif %}">
+                                        {{ order.status|title }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if order.fully_paid %}
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle me-1"></i>Fully Paid
+                                    </span>
+                                    {% elif order.advance_paid %}
+                                    <span class="badge bg-info">
+                                        <i class="bi bi-clock me-1"></i>Advance Paid
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="bi bi-exclamation-circle me-1"></i>Pending
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'admin-order-detail' order.id %}" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-eye me-1"></i>View
+                                    </a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-4">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                    No orders found matching your filters.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if page_obj.has_other_pages %}
+                <nav aria-label="Order pagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link"
+                                href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if payment_status %}&payment_status={{ payment_status }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}">First</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link"
+                                href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if payment_status %}&payment_status={{ payment_status }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}">Previous</a>
+                        </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link">
+                                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link"
+                                href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if payment_status %}&payment_status={{ payment_status }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}">Next</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link"
+                                href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if payment_status %}&payment_status={{ payment_status }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}">Last</a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
