@@ -29,6 +29,7 @@ urlpatterns = [
     path('api/dashboard/', include('apps.dashboard.urls')),
     path('api/support/', include('apps.support.urls')),
     path('api/reports/', include('apps.reports.urls')),
+    path('api/manufacturing/', include('apps.manufacturing.urls')),
 ]
 
 if settings.DEBUG:

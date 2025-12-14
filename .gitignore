@@ -1,3 +1,8 @@
 /.venv
 /backend/.env
+/backend/.hypothesis
 __pycache__/
+*/__pycache__/
+/.kiro
+*.log
+/backend/logs/*.log

@@ -7,3 +7,5 @@ django-cors-headers
 djangorestframework-simplejwt
 django-filter
 reportlab
+hypothesis
+razorpay
