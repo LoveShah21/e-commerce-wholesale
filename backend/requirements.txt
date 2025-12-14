@@ -1,0 +1,9 @@
+django==5.0.0
+python-decouple
+dj-database-url
+mysqlclient
+djangorestframework
+django-cors-headers
+djangorestframework-simplejwt
+django-filter
+reportlab
