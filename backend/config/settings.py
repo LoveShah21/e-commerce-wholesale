@@ -31,6 +31,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'django_filters',
+    'cloudinary',
+    'cloudinary_storage',
 
     # Local apps
     'apps.users',
@@ -41,6 +43,7 @@ INSTALLED_APPS = [
     'apps.support',
     'apps.dashboard',
 ]
+
 
 MIDDLEWARE = [
     'utils.middleware.HTTPSRedirectMiddleware',  # Redirect HTTP to HTTPS
@@ -116,6 +119,11 @@ AUTH_PASSWORD_VALIDATORS = [
 # Custom User Model
 AUTH_USER_MODEL = 'users.User'
 
+# Login URLs
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/dashboard/'
+LOGOUT_REDIRECT_URL = '/login/'
+
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
 
@@ -128,6 +136,7 @@ USE_I18N = True
 USE_TZ = True
 
 
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
@@ -138,10 +147,22 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# Cloudinary Configuration
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME', default=''),
+    'API_KEY': config('CLOUDINARY_API_KEY', default=''),
+    'API_SECRET': config('CLOUDINARY_API_SECRET', default=''),
+}
+
+# Use Cloudinary for media storage if configured
+if CLOUDINARY_STORAGE.get('CLOUD_NAME'):
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
 
 # REST Framework
 REST_FRAMEWORK = {

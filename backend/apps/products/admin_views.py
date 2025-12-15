@@ -3,7 +3,9 @@ from django.views import View
 from django.contrib import messages
 from django.db.models import Q, Count, Sum
 from django.db import transaction
-from apps.users.permissions import admin_required
+from django.utils.decorators import method_decorator
+from django.contrib.auth.decorators import login_required
+from apps.users.permissions import AdminRequiredMixin
 from .models import (
     Product, ProductVariant, VariantSize, Stock, ProductImage,
     Fabric, Color, Pattern, Sleeve, Pocket, Size
@@ -11,13 +13,12 @@ from .models import (
 from services.utils import generate_sku
 
 
-class AdminProductListView(View):
+class AdminProductListView(AdminRequiredMixin, View):
     """Admin view for listing and managing products"""
     
-    @admin_required
     def get(self, request):
         products = Product.objects.all().prefetch_related(
-            'images', 'variants__variant_sizes__stock_record'
+            'images', 'variants__sizes__stock_record'
         ).annotate(
             variant_count=Count('variants')
         )
@@ -63,10 +64,9 @@ class AdminProductListView(View):
         return render(request, 'products/admin/list.html', context)
 
 
-class AdminProductCreateView(View):
+class AdminProductCreateView(AdminRequiredMixin, View):
     """Admin view for creating a new product"""
     
-    @admin_required
     def get(self, request):
         context = {
             'fabrics': Fabric.objects.all(),
@@ -78,7 +78,6 @@ class AdminProductCreateView(View):
         }
         return render(request, 'products/admin/create.html', context)
     
-    @admin_required
     def post(self, request):
         try:
             with transaction.atomic():
@@ -105,10 +104,9 @@ class AdminProductCreateView(View):
             return render(request, 'products/admin/create.html', context)
 
 
-class AdminProductEditView(View):
+class AdminProductEditView(AdminRequiredMixin, View):
     """Admin view for editing a product and managing variants"""
     
-    @admin_required
     def get(self, request, pk):
         product = get_object_or_404(
             Product.objects.prefetch_related(
@@ -118,8 +116,8 @@ class AdminProductEditView(View):
                 'variants__pattern',
                 'variants__sleeve',
                 'variants__pocket',
-                'variants__variant_sizes__size',
-                'variants__variant_sizes__stock_record'
+                'variants__sizes__size',
+                'variants__sizes__stock_record'
             ),
             pk=pk
         )
@@ -135,7 +133,6 @@ class AdminProductEditView(View):
         }
         return render(request, 'products/admin/edit.html', context)
     
-    @admin_required
     def post(self, request, pk):
         product = get_object_or_404(Product, pk=pk)
         
@@ -152,10 +149,9 @@ class AdminProductEditView(View):
             return redirect('admin-product-edit', pk=product.id)
 
 
-class AdminProductDeleteView(View):
+class AdminProductDeleteView(AdminRequiredMixin, View):
     """Admin view for deleting a product"""
     
-    @admin_required
     def post(self, request, pk):
         product = get_object_or_404(Product, pk=pk)
         product_name = product.product_name
@@ -169,10 +165,9 @@ class AdminProductDeleteView(View):
         return redirect('admin-product-list')
 
 
-class AdminVariantCreateView(View):
+class AdminVariantCreateView(AdminRequiredMixin, View):
     """Admin view for creating a variant"""
     
-    @admin_required
     def post(self, request, product_id):
         product = get_object_or_404(Product, pk=product_id)
         
@@ -197,10 +192,9 @@ class AdminVariantCreateView(View):
         return redirect('admin-product-edit', pk=product_id)
 
 
-class AdminVariantUpdateView(View):
+class AdminVariantUpdateView(AdminRequiredMixin, View):
     """Admin view for updating a variant"""
     
-    @admin_required
     def post(self, request, variant_id):
         variant = get_object_or_404(ProductVariant, pk=variant_id)
         
@@ -221,10 +215,9 @@ class AdminVariantUpdateView(View):
         return redirect('admin-product-edit', pk=variant.product.id)
 
 
-class AdminVariantDeleteView(View):
+class AdminVariantDeleteView(AdminRequiredMixin, View):
     """Admin view for deleting a variant"""
     
-    @admin_required
     def post(self, request, variant_id):
         variant = get_object_or_404(ProductVariant, pk=variant_id)
         product_id = variant.product.id
@@ -238,10 +231,9 @@ class AdminVariantDeleteView(View):
         return redirect('admin-product-edit', pk=product_id)
 
 
-class AdminVariantSizeCreateView(View):
+class AdminVariantSizeCreateView(AdminRequiredMixin, View):
     """Admin view for adding a size to a variant"""
     
-    @admin_required
     def post(self, request, variant_id):
         variant = get_object_or_404(ProductVariant, pk=variant_id)
         
@@ -268,10 +260,9 @@ class AdminVariantSizeCreateView(View):
         return redirect('admin-product-edit', pk=variant.product.id)
 
 
-class AdminVariantSizeUpdateView(View):
+class AdminVariantSizeUpdateView(AdminRequiredMixin, View):
     """Admin view for updating stock for a variant size"""
     
-    @admin_required
     def post(self, request, variant_size_id):
         variant_size = get_object_or_404(VariantSize, pk=variant_size_id)
         
@@ -293,10 +284,9 @@ class AdminVariantSizeUpdateView(View):
         return redirect('admin-product-edit', pk=variant_size.variant.product.id)
 
 
-class AdminVariantSizeDeleteView(View):
+class AdminVariantSizeDeleteView(AdminRequiredMixin, View):
     """Admin view for deleting a variant size"""
     
-    @admin_required
     def post(self, request, variant_size_id):
         variant_size = get_object_or_404(VariantSize, pk=variant_size_id)
         product_id = variant_size.variant.product.id
@@ -310,14 +300,40 @@ class AdminVariantSizeDeleteView(View):
         return redirect('admin-product-edit', pk=product_id)
 
 
-class AdminProductImageUploadView(View):
-    """Admin view for uploading product images"""
+class AdminProductImageUploadView(AdminRequiredMixin, View):
+    """Admin view for uploading product images to Cloudinary"""
     
-    @admin_required
     def post(self, request, product_id):
+        import cloudinary
+        import cloudinary.uploader
+        from django.conf import settings
+        
+        # Configure Cloudinary with credentials from settings
+        cloudinary.config(
+            cloud_name=settings.CLOUDINARY_STORAGE.get('CLOUD_NAME'),
+            api_key=settings.CLOUDINARY_STORAGE.get('API_KEY'),
+            api_secret=settings.CLOUDINARY_STORAGE.get('API_SECRET')
+        )
+        
         product = get_object_or_404(Product, pk=product_id)
         
         try:
+            # Check if file was uploaded
+            if 'image_file' not in request.FILES:
+                messages.error(request, 'Please select an image file to upload.')
+                return redirect('admin-product-edit', pk=product_id)
+            
+            image_file = request.FILES['image_file']
+            
+            # Upload to Cloudinary
+            upload_result = cloudinary.uploader.upload(
+                image_file,
+                folder='vaitikan/products',
+                resource_type='image'
+            )
+            
+            image_url = upload_result.get('secure_url')
+            
             # Get the highest display order
             max_order = ProductImage.objects.filter(product=product).aggregate(
                 max_order=Sum('display_order')
@@ -325,7 +341,7 @@ class AdminProductImageUploadView(View):
             
             ProductImage.objects.create(
                 product=product,
-                image_url=request.POST.get('image_url'),
+                image_url=image_url,
                 alt_text=request.POST.get('alt_text', ''),
                 is_primary=request.POST.get('is_primary') == 'on',
                 display_order=max_order + 1
@@ -334,7 +350,7 @@ class AdminProductImageUploadView(View):
             # If this is set as primary, unset others
             if request.POST.get('is_primary') == 'on':
                 ProductImage.objects.filter(product=product).exclude(
-                    image_url=request.POST.get('image_url')
+                    image_url=image_url
                 ).update(is_primary=False)
             
             messages.success(request, 'Image uploaded successfully!')
@@ -345,10 +361,9 @@ class AdminProductImageUploadView(View):
         return redirect('admin-product-edit', pk=product_id)
 
 
-class AdminProductImageDeleteView(View):
+class AdminProductImageDeleteView(AdminRequiredMixin, View):
     """Admin view for deleting a product image"""
     
-    @admin_required
     def post(self, request, image_id):
         image = get_object_or_404(ProductImage, pk=image_id)
         product_id = image.product.id

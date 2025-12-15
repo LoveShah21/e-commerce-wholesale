@@ -13,6 +13,7 @@ from django.http import FileResponse, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from utils.rate_limiting import rate_limit_strict, rate_limit_api
+from django.conf import settings
 import os
 
 from .models import Payment, Invoice
@@ -316,15 +317,17 @@ class InvoiceDownloadView(APIView):
                 invoice.refresh_from_db()
             
             # Get PDF file path
-            pdf_path = invoice.invoice_url.lstrip('/')
-            full_path = os.path.join('backend', pdf_path)
+            # invoice.invoice_url is like "/media/invoices/INV-2024-001.pdf"
+            pdf_relative_path = invoice.invoice_url.lstrip('/')
+            # Use BASE_DIR to construct absolute path: C:/.../backend/media/invoices/...
+            full_path = os.path.join(settings.BASE_DIR, pdf_relative_path)
             
             if not os.path.exists(full_path):
                 # Regenerate PDF if file doesn't exist
                 InvoiceService.generate_invoice_pdf(invoice.id)
                 invoice.refresh_from_db()
-                pdf_path = invoice.invoice_url.lstrip('/')
-                full_path = os.path.join('backend', pdf_path)
+                pdf_relative_path = invoice.invoice_url.lstrip('/')
+                full_path = os.path.join(settings.BASE_DIR, pdf_relative_path)
             
             # Return PDF file
             response = FileResponse(
@@ -401,10 +404,10 @@ class InvoiceDetailView(APIView):
                 'delivery_address': {
                     'address_line1': order.delivery_address.address_line1,
                     'address_line2': order.delivery_address.address_line2,
-                    'city': order.delivery_address.city.city_name,
-                    'state': order.delivery_address.state.state_name,
+                    'city': order.delivery_address.postal_code.city.city_name,
+                    'state': order.delivery_address.postal_code.city.state.state_name,
                     'postal_code': order.delivery_address.postal_code.postal_code,
-                    'country': order.delivery_address.country.country_name,
+                    'country': order.delivery_address.postal_code.city.state.country.country_name,
                 },
                 'items': [{
                     'product_name': item.variant_size.variant.product.product_name,

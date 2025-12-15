@@ -20,11 +20,11 @@
                         <label for="status" class="form-label">Order Status</label>
                         <select class="form-select" id="status" name="status">
                             <option value="">All Statuses</option>
-                            <option value="confirmed" {% if status_filter=='confirmed' %}selected{% endif %}>Confirmed
+                            <option value="confirmed" {% if status_filter == 'confirmed' %}selected{% endif %}>Confirmed
                             </option>
-                            <option value="processing" {% if status_filter=='processing' %}selected{% endif %}>
+                            <option value="processing" {% if status_filter == 'processing' %}selected{% endif %}>
                                 Processing</option>
-                            <option value="dispatched" {% if status_filter=='dispatched' %}selected{% endif %}>
+                            <option value="dispatched" {% if status_filter == 'dispatched' %}selected{% endif %}>
                                 Dispatched</option>
                         </select>
                     </div>
@@ -32,9 +32,9 @@
                         <label for="feasibility" class="form-label">Production Feasibility</label>
                         <select class="form-select" id="feasibility" name="feasibility">
                             <option value="">All Orders</option>
-                            <option value="feasible" {% if feasibility_filter=='feasible' %}selected{% endif %}>Feasible
+                            <option value="feasible" {% if feasibility_filter == 'feasible' %}selected{% endif %}>Feasible
                             </option>
-                            <option value="not_feasible" {% if feasibility_filter=='not_feasible' %}selected{% endif %}>
+                            <option value="not_feasible" {% if feasibility_filter == 'not_feasible' %}selected{% endif %}>
                                 Not Feasible</option>
                         </select>
                     </div>

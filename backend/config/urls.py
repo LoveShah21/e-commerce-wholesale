@@ -20,6 +20,9 @@ from apps.support.admin_views import (
     AdminComplaintListView, AdminComplaintDetailView, AdminComplaintResolveView,
     AdminFeedbackListView
 )
+from apps.orders.admin_views import (
+    AdminOrderListView, AdminOrderDetailView, AdminOrderMaterialRequirementsView
+)
 from apps.manufacturing.web_views import (
     inventory_overview, material_list, material_create, material_edit, material_update_quantity, material_delete,
     supplier_list, supplier_create, supplier_edit, supplier_delete,
@@ -35,19 +38,7 @@ from apps.finance.web_views import (
 from django.views.generic import TemplateView
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    
-    # Web Routes
-    path('', TemplateView.as_view(template_name='index.html'), name='home'),
-    path('login/', WebLoginView.as_view(), name='login'),
-    path('register/', WebRegisterView.as_view(), name='register'),
-    path('logout/', web_logout, name='logout'),
-    
-    # Product Routes (Customer)
-    path('products/', ProductListView.as_view(), name='product-list-web'),
-    path('products/<int:pk>/', ProductDetailView.as_view(), name='product-detail-web'),
-    
-    # Admin Product Management Routes
+    # Admin Product Management Routes (must be before admin.site.urls)
     path('admin/products/', AdminProductListView.as_view(), name='admin-product-list'),
     path('admin/products/create/', AdminProductCreateView.as_view(), name='admin-product-create'),
     path('admin/products/<int:pk>/edit/', AdminProductEditView.as_view(), name='admin-product-edit'),
@@ -61,6 +52,32 @@ urlpatterns = [
     path('admin/products/<int:product_id>/images/upload/', AdminProductImageUploadView.as_view(), name='admin-product-image-upload'),
     path('admin/products/images/<int:image_id>/delete/', AdminProductImageDeleteView.as_view(), name='admin-product-image-delete'),
     
+    # Admin Support Routes (must be before admin.site.urls)
+    path('admin/inquiries/', AdminInquiryListView.as_view(), name='admin-inquiry-list'),
+    path('admin/inquiries/<int:pk>/', AdminInquiryDetailView.as_view(), name='admin-inquiry-detail'),
+    path('admin/complaints/', AdminComplaintListView.as_view(), name='admin-complaint-list'),
+    path('admin/complaints/<int:pk>/', AdminComplaintDetailView.as_view(), name='admin-complaint-detail'),
+    path('admin/complaints/<int:pk>/resolve/', AdminComplaintResolveView.as_view(), name='admin-complaint-resolve'),
+    path('admin/feedback/', AdminFeedbackListView.as_view(), name='admin-feedback-list'),
+    
+    # Admin Order Management Routes (must be before admin.site.urls)
+    path('admin/orders/', AdminOrderListView.as_view(), name='admin-order-list'),
+    path('admin/orders/<int:order_id>/', AdminOrderDetailView.as_view(), name='admin-order-detail'),
+    path('admin/orders/<int:order_id>/materials/', AdminOrderMaterialRequirementsView.as_view(), name='admin-order-materials'),
+    
+    # Django Admin (must come after custom admin/* routes)
+    path('admin/', admin.site.urls),
+    
+    # Web Routes
+    path('', TemplateView.as_view(template_name='index.html'), name='home'),
+    path('login/', WebLoginView.as_view(), name='login'),
+    path('register/', WebRegisterView.as_view(), name='register'),
+    path('logout/', web_logout, name='logout'),
+    
+    # Product Routes (Customer)
+    path('products/', ProductListView.as_view(), name='product-list-web'),
+    path('products/<int:pk>/', ProductDetailView.as_view(), name='product-detail-web'),
+    
     # Cart and Checkout Routes
     path('cart/', CartView.as_view(), name='cart-web'),
     path('checkout/', CheckoutView.as_view(), name='checkout-web'),
@@ -72,14 +89,6 @@ urlpatterns = [
     # Support Routes
     path('inquiry/', InquirySubmissionView.as_view(), name='inquiry-web'),
     path('feedback/', FeedbackSubmissionView.as_view(), name='feedback-web'),
-    
-    # Admin Support Routes
-    path('admin/inquiries/', AdminInquiryListView.as_view(), name='admin-inquiry-list'),
-    path('admin/inquiries/<int:pk>/', AdminInquiryDetailView.as_view(), name='admin-inquiry-detail'),
-    path('admin/complaints/', AdminComplaintListView.as_view(), name='admin-complaint-list'),
-    path('admin/complaints/<int:pk>/', AdminComplaintDetailView.as_view(), name='admin-complaint-detail'),
-    path('admin/complaints/<int:pk>/resolve/', AdminComplaintResolveView.as_view(), name='admin-complaint-resolve'),
-    path('admin/feedback/', AdminFeedbackListView.as_view(), name='admin-feedback-list'),
     
     # Dashboard
     path('dashboard/', DashboardWebView.as_view(), name='dashboard-web'),

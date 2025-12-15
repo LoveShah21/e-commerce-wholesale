@@ -5,7 +5,7 @@ from .models import Product, Fabric, Color, Pattern
 
 class ProductListView(View):
     def get(self, request):
-        products = Product.objects.all().prefetch_related('images', 'variants__variant_sizes__stock_record')
+        products = Product.objects.all().prefetch_related('images', 'variants__sizes__stock_record')
         
         # Apply filters
         fabric_id = request.GET.get('fabric')
@@ -55,8 +55,8 @@ class ProductDetailView(View):
                 'variants__pattern',
                 'variants__sleeve',
                 'variants__pocket',
-                'variants__variant_sizes__size',
-                'variants__variant_sizes__stock_record'
+                'variants__sizes__size',
+                'variants__sizes__stock_record'
             ),
             pk=pk
         )

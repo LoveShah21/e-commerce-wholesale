@@ -45,8 +45,7 @@
             <!-- Indicators -->
             <div class="carousel-indicators">
                 {% for image in product.images.all %}
-                <button type="button" data-bs-target="#productCarousel" data-bs-slide-to="{{ forloop.counter0 }}" {% if
-                    forloop.first %}class="active" {% endif %} aria-current="true"
+                <button type="button" data-bs-target="#productCarousel" data-bs-slide-to="{{ forloop.counter0 }}" {% if forloop.first %}class="active"{% endif %} aria-current="true"
                     aria-label="Slide {{ forloop.counter }}"></button>
                 {% endfor %}
             </div>
@@ -108,13 +107,13 @@
                             <!-- Size Selection -->
                             <h6 class="mb-2">Select Size:</h6>
                             <div class="row g-2 mb-3">
-                                {% for vsize in variant.variant_sizes.all %}
+                                {% for vsize in variant.sizes.all %}
                                 {% with stock=vsize.stock_record.quantity_available|default:0 %}
                                 <div class="col-4">
                                     <input type="radio" class="btn-check" name="variant_size_{{ variant.id }}"
                                         id="size_{{ vsize.id }}" value="{{ vsize.id }}"
                                         data-variant-id="{{ variant.id }}" data-price="{{ variant.base_price }}"
-                                        data-stock="{{ stock }}" {% if stock==0 %}disabled{% endif %}>
+                                        data-stock="{{ stock }}" {% if stock == 0 %}disabled{% endif %}>
                                     <label class="btn btn-outline-primary w-100" for="size_{{ vsize.id }}">
                                         {{ vsize.size.size_code }}
                                         <br>
@@ -305,3 +304,4 @@
     });
 </script>
 {% endblock %}
+

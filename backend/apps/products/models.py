@@ -53,6 +53,16 @@ class Product(models.Model):
 
     def __str__(self):
         return self.product_name
+    
+    @property
+    def is_in_stock(self):
+        """Check if any variant has available stock"""
+        for variant in self.variants.all():
+            for vsize in variant.sizes.all():
+                if hasattr(vsize, 'stock_record') and vsize.stock_record:
+                    if vsize.stock_record.quantity_available > 0:
+                        return True
+        return False
 
 class ProductImage(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='images')

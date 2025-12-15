@@ -58,5 +58,10 @@ class OrderItem(models.Model):
     snapshot_unit_price = models.DecimalField(max_digits=10, decimal_places=2) # Price at time of order
     created_at = models.DateTimeField(auto_now_add=True)
 
+    @property
+    def line_total(self):
+        """Calculate line total (quantity * unit price)"""
+        return self.snapshot_unit_price * self.quantity
+
     def __str__(self):
         return f"{self.quantity} x {self.variant_size} in Order #{self.order.id}"

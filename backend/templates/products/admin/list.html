@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 
 {% block title %}Manage Products - Admin{% endblock %}
 
@@ -29,36 +29,21 @@
                         <label for="fabric" class="form-label">Fabric</label>
                         <select class="form-select" id="fabric" name="fabric">
                             <option value="">All Fabrics</option>
-                            {% for fabric in fabrics %}
-                            <option value="{{ fabric.id }}" {% if selected_fabric==fabric.id|stringformat:"s"
-                                %}selected{% endif %}>
-                                {{ fabric.fabric_name }}
-                            </option>
-                            {% endfor %}
+                            {% for fabric in fabrics %}<option value="{{ fabric.id }}" {% if selected_fabric == fabric.id|stringformat:"s" %}selected{% endif %}>{{ fabric.fabric_name }}</option>{% endfor %}
                         </select>
                     </div>
                     <div class="col-md-2">
                         <label for="color" class="form-label">Color</label>
                         <select class="form-select" id="color" name="color">
                             <option value="">All Colors</option>
-                            {% for color in colors %}
-                            <option value="{{ color.id }}" {% if selected_color==color.id|stringformat:"s" %}selected{%
-                                endif %}>
-                                {{ color.color_name }}
-                            </option>
-                            {% endfor %}
+                            {% for color in colors %}<option value="{{ color.id }}" {% if selected_color == color.id|stringformat:"s" %}selected{% endif %}>{{ color.color_name }}</option>{% endfor %}
                         </select>
                     </div>
                     <div class="col-md-2">
                         <label for="pattern" class="form-label">Pattern</label>
                         <select class="form-select" id="pattern" name="pattern">
                             <option value="">All Patterns</option>
-                            {% for pattern in patterns %}
-                            <option value="{{ pattern.id }}" {% if selected_pattern==pattern.id|stringformat:"s"
-                                %}selected{% endif %}>
-                                {{ pattern.pattern_name }}
-                            </option>
-                            {% endfor %}
+                            {% for pattern in patterns %}<option value="{{ pattern.id }}" {% if selected_pattern == pattern.id|stringformat:"s" %}selected{% endif %}>{{ pattern.pattern_name }}</option>{% endfor %}
                         </select>
                     </div>
                     <div class="col-md-2 d-flex align-items-end">
@@ -112,8 +97,7 @@
                                     <small class="text-muted">{{ product.description|truncatewords:10 }}</small>
                                 </td>
                                 <td>
-                                    <span class="badge bg-info">{{ product.variant_count }} variant{{
-                                        product.variant_count|pluralize }}</span>
+                                    <span class="badge bg-info">{{ product.variant_count }} variant{{ product.variant_count|pluralize }}</span>
                                 </td>
                                 <td>
                                     <small>{{ product.created_at|date:"M d, Y" }}</small>
@@ -140,8 +124,7 @@
                             <tr>
                                 <td colspan="6" class="text-center text-muted py-4">
                                     <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                                    No products found. <a href="{% url 'admin-product-create' %}">Create your first
-                                        product</a>
+                                    No products found. <a href="{% url 'admin-product-create' %}">Create your first product</a>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -182,7 +165,7 @@
 <script>
     function confirmDelete(productId, productName) {
         document.getElementById('deleteProductName').textContent = productName;
-        document.getElementById('deleteForm').action = `/admin/products/${productId}/delete/`;
+        document.getElementById('deleteForm').action = '/admin/products/' + productId + '/delete/';
         new bootstrap.Modal(document.getElementById('deleteModal')).show();
     }
 </script>

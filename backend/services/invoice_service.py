@@ -313,8 +313,8 @@ class InvoiceService(BaseService):
         {order.user.email}<br/>
         {order.delivery_address.address_line1}<br/>
         {order.delivery_address.address_line2 or ''}<br/>
-        {order.delivery_address.city.city_name}, {order.delivery_address.state.state_name}<br/>
-        {order.delivery_address.postal_code.postal_code}, {order.delivery_address.country.country_name}
+        {order.delivery_address.postal_code.city.city_name}, {order.delivery_address.postal_code.city.state.state_name}<br/>
+        {order.delivery_address.postal_code.postal_code}, {order.delivery_address.postal_code.city.state.country.country_name}
         """
         elements.append(Paragraph(customer_info, styles['Normal']))
         elements.append(Spacer(1, 0.3*inch))
@@ -339,14 +339,14 @@ class InvoiceService(BaseService):
             items_data.append([
                 item_name,
                 str(item.quantity),
-                f"₹{item.snapshot_unit_price}",
-                f"₹{item_total}"
+                f"Rs. {item.snapshot_unit_price}",
+                f"Rs. {item_total}"
             ])
         
         # Add subtotal, tax, and total rows
-        items_data.append(['', '', 'Subtotal:', f"₹{totals['subtotal']}"])
-        items_data.append(['', '', f"Tax ({totals['tax_percentage']}%):", f"₹{totals['tax_amount']}"])
-        items_data.append(['', '', 'Total Amount:', f"₹{totals['total_amount']}"])
+        items_data.append(['', '', 'Subtotal:', f"Rs. {totals['subtotal']}"])
+        items_data.append(['', '', f"Tax ({totals['tax_percentage']}%):", f"Rs. {totals['tax_amount']}"])
+        items_data.append(['', '', 'Total Amount:', f"Rs. {totals['total_amount']}"])
         
         items_table = Table(items_data, colWidths=[3.5*inch, 1*inch, 1.5*inch, 1.5*inch])
         items_table.setStyle(TableStyle([
@@ -390,7 +390,7 @@ class InvoiceService(BaseService):
             for payment in payments:
                 payment_data.append([
                     payment.get_payment_type_display(),
-                    f"₹{payment.amount}",
+                    f"Rs. {payment.amount}",
                     payment.paid_at.strftime('%Y-%m-%d') if payment.paid_at else 'N/A',
                     payment.get_payment_status_display()
                 ])

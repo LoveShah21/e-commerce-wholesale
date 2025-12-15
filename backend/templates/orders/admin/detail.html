@@ -92,9 +92,7 @@
                                 </td>
                                 <td>{{ item.quantity }}</td>
                                 <td>₹{{ item.snapshot_unit_price|floatformat:2 }}</td>
-                                <td><strong>₹{{
-                                        item.snapshot_unit_price|floatformat:2|add:0|mul:item.quantity|floatformat:2
-                                        }}</strong></td>
+                                <td><strong>₹{{ item.line_total|floatformat:2 }}</strong></td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -367,7 +365,7 @@
                         <label for="status" class="form-label">New Status</label>
                         <select class="form-select" id="status" name="status" required>
                             {% for status_code, status_label in status_choices %}
-                            <option value="{{ status_code }}" {% if order.status==status_code %}selected{% endif %}>
+                            <option value="{{ status_code }}" {% if order.status == status_code %}selected{% endif %}>
                                 {{ status_label }}
                             </option>
                             {% endfor %}

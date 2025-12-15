@@ -267,10 +267,44 @@ class VariantSizeListCreateView(APIView):
 
 class StockUpdateView(APIView):
     """
-    Update stock for a variant size.
+    Get or update stock for a variant size.
+    GET: Public access (for stock availability checks)
     PUT/PATCH: Admin only
     """
-    permission_classes = (IsAdmin,)
+    
+    def get_permissions(self):
+        """Allow public GET, but require admin for other methods."""
+        if self.request.method == 'GET':
+            return [permissions.AllowAny()]
+        return [IsAdmin()]
+    
+    def get(self, request, variant_size_id):
+        """Get stock availability for a variant size."""
+        try:
+            variant_size = VariantSize.objects.select_related(
+                'stock_record'
+            ).get(id=variant_size_id)
+        except VariantSize.DoesNotExist:
+            return Response(
+                {'error': 'Variant size not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Get or create stock record
+        stock, created = Stock.objects.get_or_create(
+            variant_size=variant_size,
+            defaults={
+                'quantity_in_stock': variant_size.stock_quantity,
+                'quantity_reserved': 0
+            }
+        )
+        
+        return Response({
+            'variant_size_id': variant_size_id,
+            'quantity_in_stock': stock.quantity_in_stock,
+            'quantity_reserved': stock.quantity_reserved,
+            'quantity_available': stock.quantity_available
+        })
     
     def patch(self, request, variant_size_id):
         try:

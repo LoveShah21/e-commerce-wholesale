@@ -104,8 +104,7 @@
                             </td>
                             <td class="text-center">{{ item.quantity }}</td>
                             <td class="text-end">₹{{ item.snapshot_unit_price|floatformat:2 }}</td>
-                            <td class="text-end">₹{{
-                                item.snapshot_unit_price|floatformat:2|add:0|mul:item.quantity|floatformat:2 }}</td>
+                            <td class="text-end">₹{{ item.line_total|floatformat:2 }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>

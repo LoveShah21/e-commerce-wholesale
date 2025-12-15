@@ -15,3 +15,5 @@ bleach
 python-magic
 django-redis
 redis
+cloudinary
+django-cloudinary-storage

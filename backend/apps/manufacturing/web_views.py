@@ -979,6 +979,9 @@ def manufacturing_order_materials(request, order_id):
     # Calculate total quantity
     total_quantity = sum(item.quantity for item in order.items.all())
     
+    # Check if materials are already consumed (status is processing or later)
+    materials_consumed = order.status in ['processing', 'dispatched', 'delivered']
+    
     context = {
         'order': order,
         'requirements': requirements,
@@ -987,6 +990,7 @@ def manufacturing_order_materials(request, order_id):
         'total_materials_count': total_materials_count,
         'total_quantity': total_quantity,
         'total_material_cost': total_material_cost,
+        'materials_consumed': materials_consumed,
     }
     
     return render(request, 'manufacturing/order_material_requirements.html', context)

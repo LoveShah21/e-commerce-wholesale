@@ -26,7 +26,7 @@
                         <select class="form-select" id="status" name="status">
                             <option value="">All Statuses</option>
                             {% for status_code, status_label in status_choices %}
-                            <option value="{{ status_code }}" {% if status_filter==status_code %}selected{% endif %}>
+                            <option value="{{ status_code }}" {% if status_filter == status_code %}selected{% endif %}>
                                 {{ status_label }}
                             </option>
                             {% endfor %}
@@ -36,15 +36,16 @@
                         <label for="payment_status" class="form-label">Payment Status</label>
                         <select class="form-select" id="payment_status" name="payment_status">
                             <option value="">All Payments</option>
-                            <option value="pending" {% if payment_status=='pending' %}selected{% endif %}>Pending
+                            <option value="pending" {% if payment_status == 'pending' %}selected{% endif %}>Pending
                             </option>
-                            <option value="advance_paid" {% if payment_status=='advance_paid' %}selected{% endif %}>
+                            <option value="advance_paid" {% if payment_status == 'advance_paid' %}selected{% endif %}>
                                 Advance Paid</option>
-                            <option value="final_paid" {% if payment_status=='final_paid' %}selected{% endif %}>Final
+                            <option value="final_paid" {% if payment_status == 'final_paid' %}selected{% endif %}>Final
                                 Paid</option>
-                            <option value="fully_paid" {% if payment_status=='fully_paid' %}selected{% endif %}>Fully
+                            <option value="fully_paid" {% if payment_status == 'fully_paid' %}selected{% endif %}>Fully
                                 Paid</option>
                         </select>
+
                     </div>
                     <div class="col-md-2">
                         <label for="date_from" class="form-label">From Date</label>
@@ -99,8 +100,7 @@
                                     <small class="text-muted">{{ order.order_date|time:"h:i A" }}</small>
                                 </td>
                                 <td>
-                                    <span class="badge bg-secondary">{{ order.items.count }} item{{
-                                        order.items.count|pluralize }}</span>
+                                    <span class="badge bg-secondary">{{ order.items.count }} item{{ order.items.count|pluralize }}</span>
                                 </td>
                                 <td>
                                     <strong>₹{{ order.total_amount|floatformat:2 }}</strong>
