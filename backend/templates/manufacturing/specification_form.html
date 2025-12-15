@@ -1,0 +1,277 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if specification %}Edit{% else %}Create{% endif %} Manufacturing Specification{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'manufacturing-spec-list-web' %}">Manufacturing
+                        Specifications</a></li>
+                <li class="breadcrumb-item active">{% if specification %}Edit{% else %}Create{% endif %} Specification
+                </li>
+            </ol>
+        </nav>
+        <h2><i class="bi bi-gear-fill me-2"></i>{% if specification %}Edit{% else %}Create{% endif %} Manufacturing
+            Specification</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="post" id="specificationForm">
+                    {% csrf_token %}
+
+                    {% if form_error %}
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>{{ form_error }}
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label for="product" class="form-label">Product <span class="text-danger">*</span></label>
+                        <select class="form-select" id="product" name="product" required {% if specification
+                            %}disabled{% endif %}>
+                            <option value="">Select Product</option>
+                            {% for product in products %}
+                            <option value="{{ product.id }}" {% if specification and
+                                specification.variant_size.variant.product.id==product.id %}selected{% endif %}>
+                                {{ product.product_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Select the product for this specification</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="variant" class="form-label">Variant <span class="text-danger">*</span></label>
+                        <select class="form-select" id="variant" name="variant" required {% if specification
+                            %}disabled{% endif %}>
+                            <option value="">Select Product First</option>
+                            {% if specification %}
+                            <option value="{{ specification.variant_size.variant.id }}" selected>
+                                {{ specification.variant_size.variant.fabric.fabric_name }} -
+                                {{ specification.variant_size.variant.color.color_name }}
+                                {% if specification.variant_size.variant.pattern %} - {{
+                                specification.variant_size.variant.pattern.pattern_name }}{% endif %}
+                            </option>
+                            {% endif %}
+                        </select>
+                        <div class="form-text">Select the variant (fabric, color, pattern combination)</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="variant_size" class="form-label">Size <span class="text-danger">*</span></label>
+                        <select class="form-select" id="variant_size" name="variant_size" required {% if specification
+                            %}disabled{% endif %}>
+                            <option value="">Select Variant First</option>
+                            {% if specification %}
+                            <option value="{{ specification.variant_size.id }}" selected>
+                                {{ specification.variant_size.size.size_name }}
+                            </option>
+                            {% endif %}
+                        </select>
+                        <div class="form-text">Select the size for this specification</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="material" class="form-label">Material <span class="text-danger">*</span></label>
+                        <select class="form-select" id="material" name="material" required {% if specification
+                            %}disabled{% endif %}>
+                            <option value="">Select Material</option>
+                            {% for material in materials %}
+                            <option value="{{ material.id }}"
+                                data-unit="{{ material.material_type.unit_of_measurement }}"
+                                data-price="{{ material.unit_price }}" {% if specification and
+                                specification.material.id==material.id %}selected{% endif %}>
+                                {{ material.material_name }} ({{ material.material_type.material_type_name }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Select the raw material required</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="quantity_required" class="form-label">Quantity Required <span
+                                class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input type="number" step="0.01" class="form-control" id="quantity_required"
+                                name="quantity_required" required min="0.01"
+                                value="{% if specification %}{{ specification.quantity_required }}{% endif %}">
+                            <span class="input-group-text" id="unitDisplay">units</span>
+                        </div>
+                        <div class="form-text">Quantity of material required per unit of product</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title">Cost Calculation</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p class="mb-1"><strong>Material Unit Price:</strong> <span
+                                                id="materialPrice">₹0.00</span></p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p class="mb-1"><strong>Cost per Unit:</strong> <span
+                                                id="costPerUnit">₹0.00</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-2"></i>{% if specification %}Update{% else %}Create{% endif
+                            %} Specification
+                        </button>
+                        <a href="{% url 'manufacturing-spec-list-web' %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle me-2"></i>Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Help</h5>
+            </div>
+            <div class="card-body">
+                <h6>Manufacturing Specifications</h6>
+                <p class="small">Manufacturing specifications define the raw materials and quantities required to
+                    produce each product variant size.</p>
+
+                <h6 class="mt-3">Steps:</h6>
+                <ol class="small">
+                    <li>Select the product</li>
+                    <li>Choose the variant (fabric, color, pattern)</li>
+                    <li>Select the size</li>
+                    <li>Choose the raw material</li>
+                    <li>Enter the quantity required per unit</li>
+                </ol>
+
+                <div class="alert alert-info small mt-3">
+                    <i class="bi bi-lightbulb me-2"></i>
+                    <strong>Tip:</strong> You can create multiple specifications for the same variant size if it
+                    requires multiple materials.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Load variants when product is selected
+    document.getElementById('product').addEventListener('change', async function () {
+        const productId = this.value;
+        const variantSelect = document.getElementById('variant');
+        const sizeSelect = document.getElementById('variant_size');
+
+        // Reset dependent selects
+        variantSelect.innerHTML = '<option value="">Loading...</option>';
+        sizeSelect.innerHTML = '<option value="">Select Variant First</option>';
+
+        if (!productId) {
+            variantSelect.innerHTML = '<option value="">Select Product First</option>';
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/products/${productId}/`);
+            const data = await response.json();
+
+            variantSelect.innerHTML = '<option value="">Select Variant</option>';
+
+            if (data.variants && data.variants.length > 0) {
+                data.variants.forEach(variant => {
+                    const option = document.createElement('option');
+                    option.value = variant.id;
+                    option.textContent = `${variant.fabric_name} - ${variant.color_name}`;
+                    if (variant.pattern_name) {
+                        option.textContent += ` - ${variant.pattern_name}`;
+                    }
+                    variantSelect.appendChild(option);
+                });
+            } else {
+                variantSelect.innerHTML = '<option value="">No variants available</option>';
+            }
+        } catch (error) {
+            console.error('Error loading variants:', error);
+            variantSelect.innerHTML = '<option value="">Error loading variants</option>';
+        }
+    });
+
+    // Load sizes when variant is selected
+    document.getElementById('variant').addEventListener('change', async function () {
+        const variantId = this.value;
+        const sizeSelect = document.getElementById('variant_size');
+
+        sizeSelect.innerHTML = '<option value="">Loading...</option>';
+
+        if (!variantId) {
+            sizeSelect.innerHTML = '<option value="">Select Variant First</option>';
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/products/variants/${variantId}/`);
+            const data = await response.json();
+
+            sizeSelect.innerHTML = '<option value="">Select Size</option>';
+
+            if (data.sizes && data.sizes.length > 0) {
+                data.sizes.forEach(size => {
+                    const option = document.createElement('option');
+                    option.value = size.variant_size_id;
+                    option.textContent = size.size_name;
+                    sizeSelect.appendChild(option);
+                });
+            } else {
+                sizeSelect.innerHTML = '<option value="">No sizes available</option>';
+            }
+        } catch (error) {
+            console.error('Error loading sizes:', error);
+            sizeSelect.innerHTML = '<option value="">Error loading sizes</option>';
+        }
+    });
+
+    // Update unit display and cost calculation when material is selected
+    document.getElementById('material').addEventListener('change', function () {
+        const selectedOption = this.options[this.selectedIndex];
+        const unit = selectedOption.getAttribute('data-unit') || 'units';
+        const price = parseFloat(selectedOption.getAttribute('data-price')) || 0;
+
+        document.getElementById('unitDisplay').textContent = unit;
+        document.getElementById('materialPrice').textContent = `₹${price.toFixed(2)}`;
+
+        updateCostCalculation();
+    });
+
+    // Update cost calculation when quantity changes
+    document.getElementById('quantity_required').addEventListener('input', updateCostCalculation);
+
+    function updateCostCalculation() {
+        const materialSelect = document.getElementById('material');
+        const selectedOption = materialSelect.options[materialSelect.selectedIndex];
+        const price = parseFloat(selectedOption.getAttribute('data-price')) || 0;
+        const quantity = parseFloat(document.getElementById('quantity_required').value) || 0;
+
+        const costPerUnit = price * quantity;
+        document.getElementById('costPerUnit').textContent = `₹${costPerUnit.toFixed(2)}`;
+    }
+
+    // Initialize cost calculation if editing
+    {% if specification %}
+    updateCostCalculation();
+    {% endif %}
+</script>
+{% endblock %}

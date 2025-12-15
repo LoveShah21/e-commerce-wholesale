@@ -1,0 +1,121 @@
+[
+  {
+    "model": "users.user",
+    "pk": 1,
+    "fields": {
+      "username": "admin",
+      "email": "admin@vaitikan.com",
+      "password": "pbkdf2_sha256$600000$randomsalt123$hashedpassword123",
+      "full_name": "Admin User",
+      "phone": "9876543210",
+      "user_type": "admin",
+      "account_status": "active",
+      "is_staff": true,
+      "is_superuser": true,
+      "is_active": true
+    }
+  },
+  {
+    "model": "users.user",
+    "pk": 2,
+    "fields": {
+      "username": "operator1",
+      "email": "operator@vaitikan.com",
+      "password": "pbkdf2_sha256$600000$randomsalt456$hashedpassword456",
+      "full_name": "Manufacturing Operator",
+      "phone": "9876543211",
+      "user_type": "operator",
+      "account_status": "active",
+      "is_staff": false,
+      "is_superuser": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "users.user",
+    "pk": 3,
+    "fields": {
+      "username": "customer1",
+      "email": "rajesh.kumar@example.com",
+      "password": "pbkdf2_sha256$600000$randomsalt789$hashedpassword789",
+      "full_name": "Rajesh Kumar",
+      "phone": "9876543212",
+      "user_type": "customer",
+      "account_status": "active",
+      "is_staff": false,
+      "is_superuser": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "users.user",
+    "pk": 4,
+    "fields": {
+      "username": "customer2",
+      "email": "priya.sharma@example.com",
+      "password": "pbkdf2_sha256$600000$randomsalt101$hashedpassword101",
+      "full_name": "Priya Sharma",
+      "phone": "9876543213",
+      "user_type": "customer",
+      "account_status": "active",
+      "is_staff": false,
+      "is_superuser": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "users.user",
+    "pk": 5,
+    "fields": {
+      "username": "customer3",
+      "email": "amit.patel@example.com",
+      "password": "pbkdf2_sha256$600000$randomsalt202$hashedpassword202",
+      "full_name": "Amit Patel",
+      "phone": "9876543214",
+      "user_type": "customer",
+      "account_status": "active",
+      "is_staff": false,
+      "is_superuser": false,
+      "is_active": true
+    }
+  },
+  {
+    "model": "users.address",
+    "pk": 1,
+    "fields": {
+      "user": 3,
+      "address_line1": "123 MG Road",
+      "address_line2": "Near City Mall",
+      "postal_code": 1,
+      "address_type": "home",
+      "is_default": true,
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "users.address",
+    "pk": 2,
+    "fields": {
+      "user": 4,
+      "address_line1": "456 FC Road",
+      "address_line2": "Apartment 5B",
+      "postal_code": 3,
+      "address_type": "home",
+      "is_default": true,
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "users.address",
+    "pk": 3,
+    "fields": {
+      "user": 5,
+      "address_line1": "789 SG Highway",
+      "address_line2": null,
+      "postal_code": 4,
+      "address_type": "office",
+      "is_default": true,
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  }
+]

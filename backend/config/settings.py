@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
+    'django_filters',
 
     # Local apps
     'apps.users',
@@ -42,6 +43,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'utils.middleware.HTTPSRedirectMiddleware',  # Redirect HTTP to HTTPS
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -50,7 +52,10 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'apps.users.middleware.RequestLoggingMiddleware',
+    'apps.users.middleware.RequestLoggingMiddleware',  # Request/response logging
+    'utils.logging_middleware.SlowQueryLoggingMiddleware',  # Slow query logging
+    'utils.logging_middleware.SecurityEventLoggingMiddleware',  # Security event logging
+    'utils.middleware.SecurityHeadersMiddleware',  # Add security headers
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -147,6 +152,13 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticatedOrReadOnly',
     ),
+    'DEFAULT_PAGINATION_CLASS': 'utils.pagination.StandardResultsSetPagination',
+    'PAGE_SIZE': 20,
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ),
 }
 
 # JWT Settings
@@ -179,10 +191,17 @@ LOGGING = {
             'format': '{levelname} {asctime} {message}',
             'style': '{',
         },
+        'detailed': {
+            'format': '{levelname} {asctime} {name} {module} {funcName} {lineno} {message}',
+            'style': '{',
+        },
     },
     'filters': {
         'require_debug_true': {
             '()': 'django.utils.log.RequireDebugTrue',
+        },
+        'require_debug_false': {
+            '()': 'django.utils.log.RequireDebugFalse',
         },
     },
     'handlers': {
@@ -205,7 +224,31 @@ LOGGING = {
             'filename': BASE_DIR / 'logs' / 'errors.log',
             'maxBytes': 1024 * 1024 * 10,  # 10 MB
             'backupCount': 5,
-            'formatter': 'verbose',
+            'formatter': 'detailed',
+        },
+        'payment_file': {
+            'level': 'INFO',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': BASE_DIR / 'logs' / 'payments.log',
+            'maxBytes': 1024 * 1024 * 10,  # 10 MB
+            'backupCount': 10,  # Keep more payment logs
+            'formatter': 'detailed',
+        },
+        'security_file': {
+            'level': 'WARNING',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': BASE_DIR / 'logs' / 'security.log',
+            'maxBytes': 1024 * 1024 * 10,  # 10 MB
+            'backupCount': 10,
+            'formatter': 'detailed',
+        },
+        'slow_query_file': {
+            'level': 'WARNING',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': BASE_DIR / 'logs' / 'slow_queries.log',
+            'maxBytes': 1024 * 1024 * 10,  # 10 MB
+            'backupCount': 5,
+            'formatter': 'detailed',
         },
     },
     'loggers': {
@@ -215,8 +258,18 @@ LOGGING = {
             'propagate': False,
         },
         'django.request': {
-            'handlers': ['error_file'],
+            'handlers': ['error_file', 'console'],
             'level': 'ERROR',
+            'propagate': False,
+        },
+        'django.security': {
+            'handlers': ['security_file', 'console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'django.db.backends': {
+            'handlers': ['slow_query_file'],
+            'level': 'DEBUG' if DEBUG else 'WARNING',
             'propagate': False,
         },
         'services': {
@@ -224,9 +277,19 @@ LOGGING = {
             'level': 'DEBUG' if DEBUG else 'INFO',
             'propagate': False,
         },
+        'services.payment_service': {
+            'handlers': ['payment_file', 'console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
         'apps': {
             'handlers': ['console', 'file'],
             'level': 'DEBUG' if DEBUG else 'INFO',
+            'propagate': False,
+        },
+        'apps.users': {
+            'handlers': ['console', 'file'],
+            'level': 'INFO',
             'propagate': False,
         },
     },
@@ -235,3 +298,108 @@ LOGGING = {
         'level': 'INFO',
     },
 }
+
+# Database Query Logging Configuration
+# Log queries that take longer than this threshold (in seconds)
+SLOW_QUERY_THRESHOLD = config('SLOW_QUERY_THRESHOLD', default=1.0, cast=float)
+
+# Enable query logging in DEBUG mode or when explicitly enabled
+ENABLE_QUERY_LOGGING = config('ENABLE_QUERY_LOGGING', default=DEBUG, cast=bool)
+
+# Security Settings
+# =================
+
+# HTTPS Enforcement
+ENFORCE_HTTPS = config('ENFORCE_HTTPS', default=not DEBUG, cast=bool)
+
+# CSRF Protection
+CSRF_COOKIE_SECURE = not DEBUG  # Only send CSRF cookie over HTTPS in production
+CSRF_COOKIE_HTTPONLY = True  # Prevent JavaScript access to CSRF cookie
+CSRF_COOKIE_SAMESITE = 'Strict'  # Prevent CSRF cookie from being sent in cross-site requests
+CSRF_USE_SESSIONS = False  # Use cookie-based CSRF tokens
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='', cast=Csv())
+
+# Session Security
+SESSION_COOKIE_SECURE = not DEBUG  # Only send session cookie over HTTPS in production
+SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access to session cookie
+SESSION_COOKIE_SAMESITE = 'Lax'  # Prevent session cookie from being sent in cross-site requests
+SESSION_COOKIE_AGE = 86400  # 24 hours
+
+# Security Headers
+SECURE_BROWSER_XSS_FILTER = True  # Enable browser XSS filtering
+SECURE_CONTENT_TYPE_NOSNIFF = True  # Prevent MIME type sniffing
+X_FRAME_OPTIONS = 'DENY'  # Prevent clickjacking
+
+# HTTPS/SSL Settings (only in production)
+if not DEBUG:
+    SECURE_SSL_REDIRECT = ENFORCE_HTTPS  # Redirect all HTTP to HTTPS
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Caching Configuration
+# ======================
+# Django supports multiple cache backends. By default, we use local memory cache.
+# For production, Redis is recommended for better performance and scalability.
+
+# Check if Redis is configured
+REDIS_URL = config('REDIS_URL', default=None)
+
+if REDIS_URL:
+    # Use Redis cache backend if configured
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': REDIS_URL,
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                'CONNECTION_POOL_KWARGS': {
+                    'max_connections': 50,
+                    'retry_on_timeout': True,
+                },
+                'SOCKET_CONNECT_TIMEOUT': 5,
+                'SOCKET_TIMEOUT': 5,
+            },
+            'KEY_PREFIX': 'vaitikan',
+            'TIMEOUT': 300,  # Default timeout: 5 minutes
+        }
+    }
+else:
+    # Fallback to local memory cache for development
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'vaitikan-cache',
+            'OPTIONS': {
+                'MAX_ENTRIES': 1000,
+            },
+            'TIMEOUT': 300,  # Default timeout: 5 minutes
+        }
+    }
+
+# Cache key prefix to avoid collisions
+CACHE_MIDDLEWARE_KEY_PREFIX = 'vaitikan'
+CACHE_MIDDLEWARE_SECONDS = 300
+
+# Rate Limiting
+RATELIMIT_ENABLE = config('RATELIMIT_ENABLE', default=True, cast=bool)
+RATELIMIT_USE_CACHE = 'default'  # Use default cache for rate limiting
+
+# File Upload Security
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5 MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5 MB
+FILE_UPLOAD_PERMISSIONS = 0o644
+FILE_UPLOAD_DIRECTORY_PERMISSIONS = 0o755
+
+# Content Security Policy
+CSP_DEFAULT_SRC = ("'self'",)
+CSP_SCRIPT_SRC = ("'self'", "'unsafe-inline'", "'unsafe-eval'", "https://cdn.jsdelivr.net", "https://checkout.razorpay.com")
+CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net")
+CSP_IMG_SRC = ("'self'", "data:", "https:")
+CSP_FONT_SRC = ("'self'", "https://cdn.jsdelivr.net")
+CSP_CONNECT_SRC = ("'self'", "https://api.razorpay.com")
+CSP_FRAME_SRC = ("https://api.razorpay.com",)
+
+# Additional Security Settings
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'

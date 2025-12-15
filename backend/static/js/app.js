@@ -67,7 +67,7 @@ const VaitikanApp = {
     },
 
     // Show toast notification
-    showToast: function (message, type = 'info') {
+    showToast: function (message, type = 'info', duration = 3000) {
         const toastContainer = document.getElementById('toastContainer');
         if (!toastContainer) {
             const container = document.createElement('div');
@@ -77,7 +77,7 @@ const VaitikanApp = {
             document.body.appendChild(container);
         }
 
-        const toastId = 'toast-' + Date.now();
+        const toastId = 'toast-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
         const iconMap = {
             'success': 'check-circle-fill',
             'error': 'exclamation-triangle-fill',
@@ -105,42 +105,25 @@ const VaitikanApp = {
 
         document.getElementById('toastContainer').insertAdjacentHTML('beforeend', toastHTML);
         const toastElement = document.getElementById(toastId);
-        const toast = new bootstrap.Toast(toastElement, { delay: 3000 });
+        const toast = new bootstrap.Toast(toastElement, { delay: duration, autohide: true });
         toast.show();
 
         toastElement.addEventListener('hidden.bs.toast', function () {
             toastElement.remove();
         });
+
+        return toastId;
     },
 
-    // AJAX helper with CSRF token
+    // AJAX helper with CSRF token and error handling
     ajax: function (url, options = {}) {
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+        const displayOptions = options.errorDisplay || {};
+        delete options.errorDisplay;
 
-        const defaultOptions = {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
-            }
-        };
-
-        const mergedOptions = { ...defaultOptions, ...options };
-
-        if (mergedOptions.headers) {
-            mergedOptions.headers = { ...defaultOptions.headers, ...options.headers };
-        }
-
-        return fetch(url, mergedOptions)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
+        return window.ErrorHandler.fetchWithErrorHandling(url, options)
             .catch(error => {
-                console.error('AJAX Error:', error);
-                this.showToast('An error occurred. Please try again.', 'error');
+                window.ErrorHandler.displayError(error, displayOptions);
+                window.ErrorHandler.logError(error, `AJAX: ${url}`);
                 throw error;
             });
     },
@@ -224,38 +207,71 @@ document.addEventListener('DOMContentLoaded', function () {
     // Handle AJAX form submissions
     const ajaxForms = document.querySelectorAll('form[data-ajax]');
     ajaxForms.forEach(function (form) {
-        form.addEventListener('submit', function (e) {
+        form.addEventListener('submit', async function (e) {
             e.preventDefault();
             const formData = new FormData(form);
             const url = form.action;
             const method = form.method.toUpperCase();
+            const submitButton = form.querySelector('[type="submit"]');
 
-            VaitikanApp.showLoading('Submitting...');
+            const restoreButton = submitButton ?
+                window.LoadingStates.showButtonLoading(submitButton, 'Submitting...') : null;
 
-            fetch(url, {
-                method: method,
-                body: formData,
-                headers: {
-                    'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-                }
-            })
-                .then(response => response.json())
-                .then(data => {
-                    VaitikanApp.hideLoading();
-                    if (data.success) {
-                        VaitikanApp.showToast(data.message || 'Operation successful!', 'success');
-                        if (data.redirect) {
-                            setTimeout(() => window.location.href = data.redirect, 1000);
-                        }
-                    } else {
-                        VaitikanApp.showToast(data.message || 'Operation failed!', 'error');
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': formData.get('csrfmiddlewaretoken')
                     }
-                })
-                .catch(error => {
-                    VaitikanApp.hideLoading();
-                    VaitikanApp.showToast('An error occurred. Please try again.', 'error');
-                    console.error('Form submission error:', error);
                 });
+
+                if (!response.ok) {
+                    const error = await window.ErrorHandler.parseErrorResponse(response);
+
+                    // Display field errors if present
+                    if (error.fieldErrors && Object.keys(error.fieldErrors).length > 0) {
+                        window.ErrorHandler.displayFieldErrors(form, error.fieldErrors);
+                    }
+
+                    window.ErrorHandler.displayError(error, {
+                        showToast: true,
+                        showInline: false
+                    });
+
+                    throw error;
+                }
+
+                const data = await response.json();
+
+                if (data.success !== false) {
+                    VaitikanApp.showToast(data.message || 'Operation successful!', 'success');
+                    if (data.redirect) {
+                        setTimeout(() => window.location.href = data.redirect, 1000);
+                    } else if (form.hasAttribute('data-reset-on-success')) {
+                        form.reset();
+                        if (window.FormValidation) {
+                            window.FormValidation.resetForm(form);
+                        }
+                    }
+                } else {
+                    VaitikanApp.showToast(data.message || 'Operation failed!', 'error');
+                }
+            } catch (error) {
+                if (!error.type) {
+                    // Network or unknown error
+                    window.ErrorHandler.displayError({
+                        type: window.ErrorHandler.ErrorTypes.NETWORK,
+                        message: 'Unable to submit form. Please check your connection.',
+                        details: error.message
+                    });
+                }
+                window.ErrorHandler.logError(error, `Form submission: ${url}`);
+            } finally {
+                if (restoreButton) {
+                    restoreButton();
+                }
+            }
         });
     });
 });

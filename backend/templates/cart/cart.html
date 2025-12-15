@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Shopping Cart - Vaitikan City{% endblock %}
 
@@ -56,34 +57,56 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/cart.js' %}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         loadCart();
 
-        document.getElementById('checkoutBtn').addEventListener('click', function () {
+        // Start stock monitoring for cart items
+        CartModule.startStockMonitoring(30000); // Check every 30 seconds
+
+        // Handle checkout button
+        document.getElementById('checkoutBtn').addEventListener('click', async function () {
+            // Validate cart before checkout
+            const validation = await CartModule.validateCartForCheckout();
+
+            if (!validation.isValid) {
+                VaitikanApp.showToast(validation.message, 'error');
+                if (validation.details) {
+                    // Show detailed error messages
+                    setTimeout(() => {
+                        validation.details.forEach(detail => {
+                            VaitikanApp.showToast(detail, 'warning', 5000);
+                        });
+                    }, 500);
+                }
+                // Reload cart to show updated stock
+                loadCart();
+                return;
+            }
+
             window.location.href = '/checkout/';
+        });
+
+        // Listen for stock update events
+        document.addEventListener('stockUpdated', function (e) {
+            loadCart();
         });
     });
 
-    function loadCart() {
-        fetch('/api/cart/', {
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken')
-            }
-        })
-            .then(response => response.json())
-            .then(data => {
-                renderCart(data);
-            })
-            .catch(error => {
-                console.error('Error loading cart:', error);
-                document.getElementById('cartItemsContainer').innerHTML = `
-            <div class="alert alert-danger" role="alert">
-                <i class="bi bi-exclamation-triangle me-2"></i>
-                Failed to load cart. Please try again.
-            </div>
-        `;
-            });
+    async function loadCart() {
+        try {
+            const cart = await CartModule.loadCart();
+            renderCart(cart);
+        } catch (error) {
+            console.error('Error loading cart:', error);
+            document.getElementById('cartItemsContainer').innerHTML = `
+                <div class="alert alert-danger" role="alert">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Failed to load cart. Please try again.
+                </div>
+            `;
+        }
     }
 
     function renderCart(cart) {
@@ -91,15 +114,15 @@
 
         if (!cart.items || cart.items.length === 0) {
             container.innerHTML = `
-            <div class="text-center py-5">
-                <i class="bi bi-cart-x" style="font-size: 4rem; color: #ccc;"></i>
-                <h4 class="mt-3">Your cart is empty</h4>
-                <p class="text-muted">Add some products to get started!</p>
-                <a href="/products/" class="btn btn-primary mt-3">
-                    <i class="bi bi-shop me-2"></i>Browse Products
-                </a>
-            </div>
-        `;
+                <div class="text-center py-5">
+                    <i class="bi bi-cart-x" style="font-size: 4rem; color: #ccc;"></i>
+                    <h4 class="mt-3">Your cart is empty</h4>
+                    <p class="text-muted">Add some products to get started!</p>
+                    <a href="/products/" class="btn btn-primary mt-3">
+                        <i class="bi bi-shop me-2"></i>Browse Products
+                    </a>
+                </div>
+            `;
             document.getElementById('checkoutBtn').disabled = true;
             return;
         }
@@ -116,55 +139,72 @@
             const total = price * item.quantity;
             const stock = item.variant_size.stock_record?.quantity_available || 0;
 
+            // Show warning if quantity exceeds stock
+            const stockWarning = item.quantity > stock ?
+                `<small class="text-danger d-block mt-1"><i class="bi bi-exclamation-triangle"></i> Insufficient stock!</small>` : '';
+
             html += `
-            <tr data-item-id="${item.id}">
-                <td>
-                    <div class="d-flex align-items-center">
-                        ${product.images && product.images.length > 0 ?
+                <tr data-item-id="${item.id}" data-variant-size-id="${item.variant_size.id}">
+                    <td>
+                        <div class="d-flex align-items-center">
+                            ${product.images && product.images.length > 0 ?
                     `<img src="${product.images[0].image_url}" alt="${product.product_name}" 
-                                  class="rounded me-3" style="width: 80px; height: 80px; object-fit: cover;">` :
+                                      class="rounded me-3" style="width: 80px; height: 80px; object-fit: cover;">` :
                     `<div class="bg-secondary rounded me-3 d-flex align-items-center justify-content-center" 
-                                  style="width: 80px; height: 80px;">
-                                <i class="bi bi-image text-white"></i>
-                             </div>`
+                                      style="width: 80px; height: 80px;">
+                                    <i class="bi bi-image text-white"></i>
+                                 </div>`
                 }
-                        <div>
-                            <h6 class="mb-1">${product.product_name}</h6>
-                            <small class="text-muted">
-                                ${variant.fabric.fabric_name} - ${variant.color.color_name}<br>
-                                Size: ${size.size_code}
-                            </small>
+                            <div>
+                                <h6 class="mb-1">${product.product_name}</h6>
+                                <small class="text-muted">
+                                    ${variant.fabric.fabric_name} - ${variant.color.color_name}<br>
+                                    Size: ${size.size_code}
+                                </small>
+                            </div>
                         </div>
-                    </div>
-                </td>
-                <td>₹${price.toFixed(2)}</td>
-                <td>
-                    <div class="input-group" style="width: 130px;">
-                        <button class="btn btn-outline-secondary btn-sm" type="button" 
-                                onclick="updateQuantity(${item.id}, ${item.quantity - 1}, ${stock})">
-                            <i class="bi bi-dash"></i>
+                    </td>
+                    <td>${CartModule.formatPrice(price)}</td>
+                    <td>
+                        <div class="input-group" style="width: 130px;">
+                            <button class="btn btn-outline-secondary btn-sm" type="button" 
+                                    onclick="updateQuantity(${item.id}, ${item.quantity - 1}, ${stock})">
+                                <i class="bi bi-dash"></i>
+                            </button>
+                            <input type="number" class="form-control form-control-sm text-center" 
+                                   value="${item.quantity}" min="1" max="${stock}"
+                                   onchange="updateQuantity(${item.id}, this.value, ${stock})"
+                                   data-item-id="${item.id}">
+                            <button class="btn btn-outline-secondary btn-sm" type="button" 
+                                    onclick="updateQuantity(${item.id}, ${item.quantity + 1}, ${stock})">
+                                <i class="bi bi-plus"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted d-block mt-1">${stock} available</small>
+                        ${stockWarning}
+                    </td>
+                    <td><strong>${CartModule.formatPrice(total)}</strong></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger" onclick="removeItem(${item.id})" 
+                                title="Remove item">
+                            <i class="bi bi-trash"></i>
                         </button>
-                        <input type="number" class="form-control form-control-sm text-center" 
-                               value="${item.quantity}" min="1" max="${stock}"
-                               onchange="updateQuantity(${item.id}, this.value, ${stock})">
-                        <button class="btn btn-outline-secondary btn-sm" type="button" 
-                                onclick="updateQuantity(${item.id}, ${item.quantity + 1}, ${stock})">
-                            <i class="bi bi-plus"></i>
-                        </button>
-                    </div>
-                    <small class="text-muted d-block mt-1">${stock} available</small>
-                </td>
-                <td><strong>₹${total.toFixed(2)}</strong></td>
-                <td>
-                    <button class="btn btn-sm btn-outline-danger" onclick="removeItem(${item.id})">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </td>
-            </tr>
-        `;
+                    </td>
+                </tr>
+            `;
         });
 
         html += '</tbody></table></div>';
+
+        // Add clear cart button
+        html += `
+            <div class="d-flex justify-content-end mt-3">
+                <button class="btn btn-outline-danger" onclick="clearCart()">
+                    <i class="bi bi-trash me-2"></i>Clear Cart
+                </button>
+            </div>
+        `;
+
         container.innerHTML = html;
 
         // Update summary
@@ -173,92 +213,40 @@
     }
 
     function updateSummary(cart) {
-        const subtotal = cart.items.reduce((sum, item) => {
-            return sum + (parseFloat(item.variant_size.variant.base_price) * item.quantity);
-        }, 0);
+        const totals = CartModule.calculateCartTotals(cart);
 
-        const taxRate = 0.18; // 18% GST
-        const tax = subtotal * taxRate;
-        const total = subtotal + tax;
-
-        document.getElementById('cartSubtotal').textContent = `₹${subtotal.toFixed(2)}`;
-        document.getElementById('cartTax').textContent = `₹${tax.toFixed(2)}`;
-        document.getElementById('cartTotal').textContent = `₹${total.toFixed(2)}`;
+        document.getElementById('cartSubtotal').textContent = CartModule.formatPrice(totals.subtotal);
+        document.getElementById('cartTax').textContent = CartModule.formatPrice(totals.tax);
+        document.getElementById('cartTotal').textContent = CartModule.formatPrice(totals.total);
     }
 
-    function updateQuantity(itemId, newQuantity, maxStock) {
-        newQuantity = parseInt(newQuantity);
-
-        if (newQuantity < 1) {
-            VaitikanApp.showToast('Quantity must be at least 1', 'warning');
-            return;
+    async function updateQuantity(itemId, newQuantity, maxStock) {
+        try {
+            await CartModule.updateCartItem(itemId, newQuantity, maxStock);
+            loadCart();
+        } catch (error) {
+            console.error('Error updating quantity:', error);
+            loadCart();
         }
+    }
 
-        if (newQuantity > maxStock) {
-            VaitikanApp.showToast(`Only ${maxStock} items available in stock`, 'error');
-            return;
+    async function removeItem(itemId) {
+        const removed = await CartModule.removeCartItem(itemId);
+        if (removed) {
+            loadCart();
         }
-
-        fetch(`/api/cart-items/${itemId}/`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken')
-            },
-            body: JSON.stringify({ quantity: newQuantity })
-        })
-            .then(response => {
-                if (!response.ok) {
-                    return response.json().then(err => Promise.reject(err));
-                }
-                return response.json();
-            })
-            .then(data => {
-                VaitikanApp.showToast('Cart updated', 'success');
-                loadCart();
-            })
-            .catch(error => {
-                const message = error.detail || error.message || 'Failed to update quantity';
-                VaitikanApp.showToast(message, 'error');
-                loadCart();
-            });
     }
 
-    function removeItem(itemId) {
-        VaitikanApp.showDeleteConfirm('Are you sure you want to remove this item from your cart?', function () {
-            fetch(`/api/cart-items/${itemId}/`, {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken')
-                }
-            })
-                .then(response => {
-                    if (response.ok) {
-                        VaitikanApp.showToast('Item removed from cart', 'success');
-                        loadCart();
-                    } else {
-                        throw new Error('Failed to remove item');
-                    }
-                })
-                .catch(error => {
-                    VaitikanApp.showToast('Failed to remove item', 'error');
-                });
-        });
-    }
-
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
+    async function clearCart() {
+        const cleared = await CartModule.clearCart();
+        if (cleared) {
+            loadCart();
         }
-        return cookieValue;
     }
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', function () {
+        CartModule.stopStockMonitoring();
+    });
 </script>
 {% endblock %}

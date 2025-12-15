@@ -159,8 +159,8 @@ class AdminOrderDetailView(LoginRequiredMixin, AdminRequiredMixin, View):
     def get(self, request, order_id):
         order = get_object_or_404(
             Order.objects.select_related(
-                'user', 'delivery_address', 'delivery_address__city',
-                'delivery_address__state', 'delivery_address__country'
+                'user', 'delivery_address', 'delivery_address__postal_code__city',
+                'delivery_address__postal_code__city__state', 'delivery_address__postal_code__city__state__country'
             ).prefetch_related(
                 'items__variant_size__variant__product',
                 'items__variant_size__variant__fabric',

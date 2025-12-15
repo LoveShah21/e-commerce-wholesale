@@ -1,0 +1,259 @@
+{% extends 'base.html' %}
+
+{% block title %}Material Requirements - Order #{{ order.id }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'dashboard-web' %}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'manufacturing-orders-web' %}">Manufacturing Orders</a></li>
+                <li class="breadcrumb-item active">Order #{{ order.id }} Materials</li>
+            </ol>
+        </nav>
+        <div class="d-flex justify-content-between align-items-center">
+            <h2><i class="bi bi-box-seam me-2"></i>Material Requirements - Order #{{ order.id }}</h2>
+            {% if is_feasible %}
+            <button type="button" class="btn btn-success" onclick="confirmConsumption()">
+                <i class="bi bi-check-circle me-2"></i>Consume Materials
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Order Summary -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Order Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <p class="mb-2"><strong>Order ID:</strong> #{{ order.id }}</p>
+                        <p class="mb-2"><strong>Customer:</strong> {{ order.user.full_name }}</p>
+                    </div>
+                    <div class="col-md-3">
+                        <p class="mb-2"><strong>Status:</strong>
+                            <span class="badge 
+                                {% if order.status == 'pending' %}bg-warning
+                                {% elif order.status == 'confirmed' %}bg-info
+                                {% elif order.status == 'processing' %}bg-primary
+                                {% elif order.status == 'dispatched' %}bg-success
+                                {% elif order.status == 'delivered' %}bg-success
+                                {% elif order.status == 'cancelled' %}bg-danger
+                                {% endif %}">
+                                {{ order.get_status_display }}
+                            </span>
+                        </p>
+                        <p class="mb-2"><strong>Order Date:</strong> {{ order.order_date|date:"M d, Y" }}</p>
+                    </div>
+                    <div class="col-md-3">
+                        <p class="mb-2"><strong>Total Items:</strong> {{ order.items.count }}</p>
+                        <p class="mb-2"><strong>Total Quantity:</strong> {{ total_quantity }}</p>
+                    </div>
+                    <div class="col-md-3">
+                        <p class="mb-2"><strong>Materials Required:</strong> {{ total_materials_count }}</p>
+                        <p class="mb-2"><strong>Production Status:</strong>
+                            {% if is_feasible %}
+                            <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Feasible</span>
+                            {% else %}
+                            <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Not Feasible</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Feasibility Alert -->
+{% if not is_feasible %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-danger">
+            <h5 class="alert-heading"><i class="bi bi-exclamation-triangle me-2"></i>Insufficient Materials</h5>
+            <p>This order cannot be produced with current inventory. The following materials are insufficient:</p>
+            <ul class="mb-0">
+                {% for missing in missing_materials %}
+                <li>
+                    <strong>{{ missing.material_name }}</strong>:
+                    Need {{ missing.required }}, Have {{ missing.available }},
+                    Shortage: <span class="text-danger">{{ missing.shortage }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Material Requirements Table -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Material Requirements</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Material</th>
+                                <th>Type</th>
+                                <th>Required Quantity</th>
+                                <th>Available Quantity</th>
+                                <th>Status</th>
+                                <th>Unit Cost</th>
+                                <th>Total Cost</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for req in requirements %}
+                            <tr {% if not req.is_sufficient %}class="table-danger" {% endif %}>
+                                <td>
+                                    <strong>{{ req.material_name }}</strong>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ req.material_type }}</span>
+                                </td>
+                                <td>
+                                    {{ req.required_quantity }} {{ req.unit_of_measurement }}
+                                </td>
+                                <td>
+                                    {{ req.available_quantity }} {{ req.unit_of_measurement }}
+                                </td>
+                                <td>
+                                    {% if req.is_sufficient %}
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle me-1"></i>Sufficient
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-danger">
+                                        <i class="bi bi-x-circle me-1"></i>Insufficient
+                                        <br>Shortage: {{ req.shortage }}
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    ₹{{ req.unit_cost|floatformat:2 }}
+                                </td>
+                                <td>
+                                    ₹{{ req.total_cost|floatformat:2 }}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                    No material requirements found. Manufacturing specifications may not be set up for
+                                    these products.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        {% if requirements %}
+                        <tfoot>
+                            <tr class="table-light">
+                                <td colspan="6" class="text-end"><strong>Total Material Cost:</strong></td>
+                                <td><strong>₹{{ total_material_cost|floatformat:2 }}</strong></td>
+                            </tr>
+                        </tfoot>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Order Items Breakdown -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-box me-2"></i>Order Items</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Variant</th>
+                                <th>Size</th>
+                                <th>Quantity</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in order.items.all %}
+                            <tr>
+                                <td>{{ item.variant_size.variant.product.product_name }}</td>
+                                <td>
+                                    <span class="badge bg-info">{{ item.variant_size.variant.fabric.fabric_name
+                                        }}</span>
+                                    <span class="badge bg-secondary">{{ item.variant_size.variant.color.color_name
+                                        }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary">{{ item.variant_size.size.size_name }}</span>
+                                </td>
+                                <td>{{ item.quantity }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Consumption Confirmation Modal -->
+<div class="modal fade" id="consumptionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Material Consumption</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to consume materials for Order #{{ order.id }}?</p>
+                <p class="text-warning"><i class="bi bi-exclamation-triangle me-2"></i>This will deduct the required
+                    quantities from inventory and cannot be undone.</p>
+                <div class="alert alert-info">
+                    <strong>Materials to be consumed:</strong>
+                    <ul class="mb-0 mt-2">
+                        {% for req in requirements %}
+                        <li>{{ req.material_name }}: {{ req.required_quantity }} {{ req.unit_of_measurement }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="consumptionForm" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="consume_materials">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle me-2"></i>Confirm Consumption
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function confirmConsumption() {
+        new bootstrap.Modal(document.getElementById('consumptionModal')).show();
+    }
+</script>
+{% endblock %}

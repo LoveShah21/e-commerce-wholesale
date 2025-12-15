@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+
+{% block title %}Manufacturing Specifications{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2><i class="bi bi-gear-fill me-2"></i>Manufacturing Specifications</h2>
+            <a href="{% url 'manufacturing-spec-create-web' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>Add New Specification
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Search and Filters -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" action="{% url 'manufacturing-spec-list-web' %}" class="row g-3">
+                    <div class="col-md-4">
+                        <label for="search" class="form-label">Search Product</label>
+                        <input type="text" class="form-control" id="search" name="search"
+                            placeholder="Search by product name..." value="{{ search_query }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="material" class="form-label">Material</label>
+                        <select class="form-select" id="material" name="material">
+                            <option value="">All Materials</option>
+                            {% for mat in materials %}
+                            <option value="{{ mat.id }}" {% if selected_material==mat.id|stringformat:"s" %}selected{%
+                                endif %}>
+                                {{ mat.material_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="product" class="form-label">Product</label>
+                        <select class="form-select" id="product" name="product">
+                            <option value="">All Products</option>
+                            {% for prod in products %}
+                            <option value="{{ prod.id }}" {% if selected_product==prod.id|stringformat:"s" %}selected{%
+                                endif %}>
+                                {{ prod.product_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search me-2"></i>Search
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Specifications Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Variant Details</th>
+                                <th>Size</th>
+                                <th>Material</th>
+                                <th>Quantity Required</th>
+                                <th>Unit Cost</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for spec in specifications %}
+                            <tr>
+                                <td>
+                                    <strong>{{ spec.variant_size.variant.product.product_name }}</strong>
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-wrap gap-1">
+                                        <span class="badge bg-info">{{ spec.variant_size.variant.fabric.fabric_name
+                                            }}</span>
+                                        <span class="badge bg-secondary">{{ spec.variant_size.variant.color.color_name
+                                            }}</span>
+                                        {% if spec.variant_size.variant.pattern %}
+                                        <span class="badge bg-light text-dark">{{
+                                            spec.variant_size.variant.pattern.pattern_name }}</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary">{{ spec.variant_size.size.size_name }}</span>
+                                </td>
+                                <td>
+                                    <strong>{{ spec.material.material_name }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ spec.material.material_type.material_type_name
+                                        }}</small>
+                                </td>
+                                <td>
+                                    {{ spec.quantity_required }} {{ spec.material.material_type.unit_of_measurement }}
+                                </td>
+                                <td>
+                                    ₹{{ spec.unit_cost|floatformat:2 }}
+                                </td>
+                                <td>
+                                    <small>{{ spec.created_at|date:"M d, Y" }}</small>
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'manufacturing-spec-edit-web' spec.id %}"
+                                            class="btn btn-sm btn-outline-secondary" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                            onclick="confirmDelete({{ spec.id }}, '{{ spec.variant_size.variant.product.product_name }} - {{ spec.material.material_name }}')"
+                                            title="Delete">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-4">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                    No manufacturing specifications found. <a
+                                        href="{% url 'manufacturing-spec-create-web' %}">Add your first
+                                        specification</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this specification?</p>
+                <p><strong id="deleteSpecName"></strong></p>
+                <p class="text-danger"><i class="bi bi-exclamation-triangle me-2"></i>This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete Specification</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function confirmDelete(specId, specName) {
+        document.getElementById('deleteSpecName').textContent = specName;
+        document.getElementById('deleteForm').action = `/manufacturing/specifications/${specId}/delete/`;
+        new bootstrap.Modal(document.getElementById('deleteModal')).show();
+    }
+</script>
+{% endblock %}

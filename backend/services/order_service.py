@@ -20,7 +20,7 @@ from services.cart_service import CartService
 from services.utils import calculate_price_with_markup
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('services.order_service')
 
 
 class OrderService(BaseService):

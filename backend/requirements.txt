@@ -1,4 +1,4 @@
-django==5.0.0
+django
 python-decouple
 dj-database-url
 mysqlclient
@@ -9,3 +9,9 @@ django-filter
 reportlab
 hypothesis
 razorpay
+django-ratelimit
+pillow
+bleach
+python-magic
+django-redis
+redis

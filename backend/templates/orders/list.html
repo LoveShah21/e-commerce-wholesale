@@ -1,7 +1,16 @@
 {% extends 'base.html' %}
+{% load role_tags %}
 
 {% block content %}
-<h2 class="mb-4">My Orders</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">My Orders</h2>
+    {% can_manage_orders user as can_manage %}
+    {% if can_manage %}
+    <a href="/admin/orders/" class="btn btn-primary">
+        <i class="bi bi-gear me-2"></i>Manage All Orders
+    </a>
+    {% endif %}
+</div>
 <div class="table-responsive">
     <table class="table table-striped table-hover">
         <thead class="table-dark">

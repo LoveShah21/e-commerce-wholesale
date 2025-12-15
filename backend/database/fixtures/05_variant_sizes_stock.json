@@ -1,0 +1,382 @@
+[
+  {
+    "model": "products.variantsize",
+    "pk": 1,
+    "fields": {
+      "variant": 1,
+      "size": 2,
+      "stock_quantity": 50,
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.variantsize",
+    "pk": 2,
+    "fields": {
+      "variant": 1,
+      "size": 3,
+      "stock_quantity": 45,
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.variantsize",
+    "pk": 3,
+    "fields": {
+      "variant": 1,
+      "size": 4,
+      "stock_quantity": 40,
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.variantsize",
+    "pk": 4,
+    "fields": {
+      "variant": 2,
+      "size": 2,
+      "stock_quantity": 55,
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.variantsize",
+    "pk": 5,
+    "fields": {
+      "variant": 2,
+      "size": 3,
+      "stock_quantity": 50,
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.variantsize",
+    "pk": 6,
+    "fields": {
+      "variant": 2,
+      "size": 4,
+      "stock_quantity": 35,
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.variantsize",
+    "pk": 7,
+    "fields": {
+      "variant": 3,
+      "size": 2,
+      "stock_quantity": 30,
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.variantsize",
+    "pk": 8,
+    "fields": {
+      "variant": 3,
+      "size": 3,
+      "stock_quantity": 25,
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.variantsize",
+    "pk": 9,
+    "fields": {
+      "variant": 4,
+      "size": 2,
+      "stock_quantity": 40,
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.variantsize",
+    "pk": 10,
+    "fields": {
+      "variant": 4,
+      "size": 3,
+      "stock_quantity": 35,
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.variantsize",
+    "pk": 11,
+    "fields": {
+      "variant": 5,
+      "size": 1,
+      "stock_quantity": 60,
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.variantsize",
+    "pk": 12,
+    "fields": {
+      "variant": 5,
+      "size": 2,
+      "stock_quantity": 70,
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.variantsize",
+    "pk": 13,
+    "fields": {
+      "variant": 5,
+      "size": 3,
+      "stock_quantity": 55,
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.variantsize",
+    "pk": 14,
+    "fields": {
+      "variant": 6,
+      "size": 2,
+      "stock_quantity": 45,
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.variantsize",
+    "pk": 15,
+    "fields": {
+      "variant": 6,
+      "size": 3,
+      "stock_quantity": 40,
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.variantsize",
+    "pk": 16,
+    "fields": {
+      "variant": 7,
+      "size": 2,
+      "stock_quantity": 20,
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.variantsize",
+    "pk": 17,
+    "fields": {
+      "variant": 7,
+      "size": 3,
+      "stock_quantity": 15,
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.variantsize",
+    "pk": 18,
+    "fields": {
+      "variant": 8,
+      "size": 2,
+      "stock_quantity": 25,
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.variantsize",
+    "pk": 19,
+    "fields": {
+      "variant": 8,
+      "size": 3,
+      "stock_quantity": 20,
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.stock",
+    "pk": 1,
+    "fields": {
+      "variant_size": 1,
+      "quantity_in_stock": 50,
+      "quantity_reserved": 0,
+      "last_updated": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.stock",
+    "pk": 2,
+    "fields": {
+      "variant_size": 2,
+      "quantity_in_stock": 45,
+      "quantity_reserved": 0,
+      "last_updated": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.stock",
+    "pk": 3,
+    "fields": {
+      "variant_size": 3,
+      "quantity_in_stock": 40,
+      "quantity_reserved": 0,
+      "last_updated": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.stock",
+    "pk": 4,
+    "fields": {
+      "variant_size": 4,
+      "quantity_in_stock": 55,
+      "quantity_reserved": 0,
+      "last_updated": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.stock",
+    "pk": 5,
+    "fields": {
+      "variant_size": 5,
+      "quantity_in_stock": 50,
+      "quantity_reserved": 0,
+      "last_updated": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.stock",
+    "pk": 6,
+    "fields": {
+      "variant_size": 6,
+      "quantity_in_stock": 35,
+      "quantity_reserved": 0,
+      "last_updated": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.stock",
+    "pk": 7,
+    "fields": {
+      "variant_size": 7,
+      "quantity_in_stock": 30,
+      "quantity_reserved": 0,
+      "last_updated": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.stock",
+    "pk": 8,
+    "fields": {
+      "variant_size": 8,
+      "quantity_in_stock": 25,
+      "quantity_reserved": 0,
+      "last_updated": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.stock",
+    "pk": 9,
+    "fields": {
+      "variant_size": 9,
+      "quantity_in_stock": 40,
+      "quantity_reserved": 0,
+      "last_updated": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.stock",
+    "pk": 10,
+    "fields": {
+      "variant_size": 10,
+      "quantity_in_stock": 35,
+      "quantity_reserved": 0,
+      "last_updated": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.stock",
+    "pk": 11,
+    "fields": {
+      "variant_size": 11,
+      "quantity_in_stock": 60,
+      "quantity_reserved": 0,
+      "last_updated": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.stock",
+    "pk": 12,
+    "fields": {
+      "variant_size": 12,
+      "quantity_in_stock": 70,
+      "quantity_reserved": 0,
+      "last_updated": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.stock",
+    "pk": 13,
+    "fields": {
+      "variant_size": 13,
+      "quantity_in_stock": 55,
+      "quantity_reserved": 0,
+      "last_updated": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.stock",
+    "pk": 14,
+    "fields": {
+      "variant_size": 14,
+      "quantity_in_stock": 45,
+      "quantity_reserved": 0,
+      "last_updated": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.stock",
+    "pk": 15,
+    "fields": {
+      "variant_size": 15,
+      "quantity_in_stock": 40,
+      "quantity_reserved": 0,
+      "last_updated": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.stock",
+    "pk": 16,
+    "fields": {
+      "variant_size": 16,
+      "quantity_in_stock": 20,
+      "quantity_reserved": 0,
+      "last_updated": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.stock",
+    "pk": 17,
+    "fields": {
+      "variant_size": 17,
+      "quantity_in_stock": 15,
+      "quantity_reserved": 0,
+      "last_updated": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.stock",
+    "pk": 18,
+    "fields": {
+      "variant_size": 18,
+      "quantity_in_stock": 25,
+      "quantity_reserved": 0,
+      "last_updated": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.stock",
+    "pk": 19,
+    "fields": {
+      "variant_size": 19,
+      "quantity_in_stock": 20,
+      "quantity_reserved": 0,
+      "last_updated": "2024-01-01T00:00:00Z"
+    }
+  }
+]

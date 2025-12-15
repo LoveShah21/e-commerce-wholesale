@@ -24,7 +24,13 @@ from apps.manufacturing.web_views import (
     inventory_overview, material_list, material_create, material_edit, material_update_quantity, material_delete,
     supplier_list, supplier_create, supplier_edit, supplier_delete,
     material_supplier_list, material_supplier_create, material_supplier_edit, material_supplier_delete,
-    material_type_create
+    material_type_create,
+    manufacturing_spec_list, manufacturing_spec_create, manufacturing_spec_edit, manufacturing_spec_delete,
+    manufacturing_orders_list, manufacturing_order_materials
+)
+from apps.finance.web_views import (
+    PaymentSuccessView, PaymentFailureView, PaymentHistoryView, OrderPaymentView,
+    InvoicePreviewView
 )
 from django.views.generic import TemplateView
 
@@ -95,6 +101,23 @@ urlpatterns = [
     path('inventory/material-suppliers/<int:ms_id>/delete/', material_supplier_delete, name='material-supplier-delete-web'),
     path('inventory/material-types/create/', material_type_create, name='material-type-create-web'),
 
+    # Manufacturing Workflow Routes
+    path('manufacturing/specifications/', manufacturing_spec_list, name='manufacturing-spec-list-web'),
+    path('manufacturing/specifications/create/', manufacturing_spec_create, name='manufacturing-spec-create-web'),
+    path('manufacturing/specifications/<int:spec_id>/edit/', manufacturing_spec_edit, name='manufacturing-spec-edit-web'),
+    path('manufacturing/specifications/<int:spec_id>/delete/', manufacturing_spec_delete, name='manufacturing-spec-delete-web'),
+    path('manufacturing/orders/', manufacturing_orders_list, name='manufacturing-orders-web'),
+    path('manufacturing/orders/<int:order_id>/materials/', manufacturing_order_materials, name='manufacturing-order-materials-web'),
+
+    # Payment Routes
+    path('payments/success/', PaymentSuccessView.as_view(), name='payment-success-web'),
+    path('payments/failure/', PaymentFailureView.as_view(), name='payment-failure-web'),
+    path('payments/history/', PaymentHistoryView.as_view(), name='payment-history-web'),
+    path('payments/order/<int:order_id>/', OrderPaymentView.as_view(), name='order-payment-web'),
+    
+    # Invoice Routes
+    path('invoices/<int:order_id>/preview/', InvoicePreviewView.as_view(), name='invoice-preview-web'),
+
     # API Routes
     path('api/users/', include('apps.users.urls')),
     path('api/products/', include('apps.products.urls')),
@@ -103,8 +126,14 @@ urlpatterns = [
     path('api/support/', include('apps.support.urls')),
     path('api/reports/', include('apps.reports.urls')),
     path('api/manufacturing/', include('apps.manufacturing.urls')),
+    path('api/', include('apps.finance.urls')),
 ]
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+# Custom error handlers
+handler404 = 'django.views.defaults.page_not_found'
+handler403 = 'django.views.defaults.permission_denied'
+handler500 = 'django.views.defaults.server_error'

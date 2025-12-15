@@ -3,10 +3,12 @@ from rest_framework.response import Response
 from rest_framework import permissions, status
 from django.db.models import Sum, Count, F, Q
 from django.utils import timezone
+from django.core.cache import cache
 from datetime import datetime, timedelta
 from apps.orders.models import Order
 from apps.products.models import Stock, Product
 from apps.finance.models import Payment
+from utils.query_cache import generate_cache_key, get_cache_timeout
 
 class DashboardStatsView(APIView):
     """
@@ -26,6 +28,20 @@ class DashboardStatsView(APIView):
         end_date = request.query_params.get('end_date')
         days = int(request.query_params.get('days', 7))
         low_stock_threshold = int(request.query_params.get('low_stock_threshold', 10))
+        
+        # Generate cache key based on parameters
+        cache_key = generate_cache_key(
+            'dashboard_stats',
+            start_date=start_date,
+            end_date=end_date,
+            days=days,
+            threshold=low_stock_threshold
+        )
+        
+        # Try to get from cache
+        cached_result = cache.get(cache_key)
+        if cached_result is not None:
+            return Response(cached_result)
         
         # Parse dates if provided
         date_filter = {}
@@ -68,11 +84,14 @@ class DashboardStatsView(APIView):
         low_stock_count = Stock.objects.filter(quantity_in_stock__lte=low_stock_threshold).count()
         
         # Recent Orders (limited to 10, ordered by date descending)
-        recent_orders = Order.objects.filter(**order_date_filter).order_by('-order_date')[:10].values(
+        # Optimized with select_related to avoid N+1 queries
+        recent_orders = Order.objects.filter(
+            **order_date_filter
+        ).select_related('user').order_by('-order_date')[:10].values(
             'id', 'user__full_name', 'status', 'order_date'
         )
         
-        return Response({
+        result = {
             'total_sales': float(total_sales),
             'total_orders': total_orders,
             'pending_orders': pending_orders,
@@ -80,7 +99,12 @@ class DashboardStatsView(APIView):
             'recent_orders': list(recent_orders),
             'sales_trend': self.get_sales_trend(days, start_date, end_date),
             'low_stock_details': self.get_low_stock_details(low_stock_threshold)
-        })
+        }
+        
+        # Cache the result for 3 minutes
+        cache.set(cache_key, result, get_cache_timeout('dashboard_stats'))
+        
+        return Response(result)
 
     def get_sales_trend(self, days=7, start_date=None, end_date=None):
         """

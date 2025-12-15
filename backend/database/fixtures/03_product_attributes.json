@@ -1,0 +1,242 @@
+[
+  {
+    "model": "products.fabric",
+    "pk": 1,
+    "fields": {
+      "fabric_name": "Cotton",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.fabric",
+    "pk": 2,
+    "fields": {
+      "fabric_name": "Linen",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.fabric",
+    "pk": 3,
+    "fields": {
+      "fabric_name": "Silk",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.fabric",
+    "pk": 4,
+    "fields": {
+      "fabric_name": "Polyester",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.fabric",
+    "pk": 5,
+    "fields": {
+      "fabric_name": "Cotton Blend",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.color",
+    "pk": 1,
+    "fields": {
+      "color_name": "White",
+      "hex_code": "#FFFFFF",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.color",
+    "pk": 2,
+    "fields": {
+      "color_name": "Blue",
+      "hex_code": "#0000FF",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.color",
+    "pk": 3,
+    "fields": {
+      "color_name": "Black",
+      "hex_code": "#000000",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.color",
+    "pk": 4,
+    "fields": {
+      "color_name": "Pink",
+      "hex_code": "#FFC0CB",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.color",
+    "pk": 5,
+    "fields": {
+      "color_name": "Grey",
+      "hex_code": "#808080",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.color",
+    "pk": 6,
+    "fields": {
+      "color_name": "Navy Blue",
+      "hex_code": "#000080",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.pattern",
+    "pk": 1,
+    "fields": {
+      "pattern_name": "Solid",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.pattern",
+    "pk": 2,
+    "fields": {
+      "pattern_name": "Striped",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.pattern",
+    "pk": 3,
+    "fields": {
+      "pattern_name": "Checked",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.pattern",
+    "pk": 4,
+    "fields": {
+      "pattern_name": "Printed",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.pattern",
+    "pk": 5,
+    "fields": {
+      "pattern_name": "Dotted",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.sleeve",
+    "pk": 1,
+    "fields": {
+      "sleeve_type": "Full Sleeve",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.sleeve",
+    "pk": 2,
+    "fields": {
+      "sleeve_type": "Half Sleeve",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.sleeve",
+    "pk": 3,
+    "fields": {
+      "sleeve_type": "Sleeveless",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.sleeve",
+    "pk": 4,
+    "fields": {
+      "sleeve_type": "Three Quarter",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.pocket",
+    "pk": 1,
+    "fields": {
+      "pocket_type": "No Pocket",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.pocket",
+    "pk": 2,
+    "fields": {
+      "pocket_type": "Single Pocket",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.pocket",
+    "pk": 3,
+    "fields": {
+      "pocket_type": "Double Pocket",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.size",
+    "pk": 1,
+    "fields": {
+      "size_code": "S",
+      "size_name": "Small",
+      "size_markup_percentage": "0.00",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.size",
+    "pk": 2,
+    "fields": {
+      "size_code": "M",
+      "size_name": "Medium",
+      "size_markup_percentage": "0.00",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.size",
+    "pk": 3,
+    "fields": {
+      "size_code": "L",
+      "size_name": "Large",
+      "size_markup_percentage": "5.00",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.size",
+    "pk": 4,
+    "fields": {
+      "size_code": "XL",
+      "size_name": "Extra Large",
+      "size_markup_percentage": "10.00",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.size",
+    "pk": 5,
+    "fields": {
+      "size_code": "XXL",
+      "size_name": "Double Extra Large",
+      "size_markup_percentage": "15.00",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  }
+]

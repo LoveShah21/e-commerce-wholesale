@@ -19,9 +19,10 @@ from apps.finance.models import Invoice, TaxConfiguration
 from apps.orders.models import Order
 from services.base import BaseService
 from services.utils import calculate_total_with_tax
+from services.cache_service import CacheService
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('services.invoice_service')
 
 
 class InvoiceService(BaseService):
@@ -74,6 +75,7 @@ class InvoiceService(BaseService):
     def get_active_tax_config(cls, date=None) -> Optional[TaxConfiguration]:
         """
         Get the active tax configuration for a specific date.
+        Uses caching to improve performance.
         
         Args:
             date: The date to get tax configuration for (defaults to today)
@@ -83,6 +85,33 @@ class InvoiceService(BaseService):
         """
         if date is None:
             date = datetime.now().date()
+            
+            # Try to get from cache for current date (most common case)
+            cached_config = CacheService.get_active_tax_config_cache()
+            if cached_config is not None:
+                cls.log_debug("Retrieved active tax config from cache")
+                # Return a TaxConfiguration object from cached data
+                return TaxConfiguration(
+                    id=cached_config['id'],
+                    tax_name=cached_config['tax_name'],
+                    tax_percentage=Decimal(str(cached_config['tax_percentage'])),
+                    effective_from=cached_config['effective_from'],
+                    effective_to=cached_config.get('effective_to'),
+                    is_active=cached_config['is_active']
+                )
+        else:
+            # Try to get from cache for specific date
+            cached_config = CacheService.get_tax_config_by_date_cache(date)
+            if cached_config is not None:
+                cls.log_debug(f"Retrieved tax config for date {date} from cache")
+                return TaxConfiguration(
+                    id=cached_config['id'],
+                    tax_name=cached_config['tax_name'],
+                    tax_percentage=Decimal(str(cached_config['tax_percentage'])),
+                    effective_from=cached_config['effective_from'],
+                    effective_to=cached_config.get('effective_to'),
+                    is_active=cached_config['is_active']
+                )
         
         # Find tax config where date is between effective_from and effective_to
         # or effective_to is null (ongoing)
@@ -95,6 +124,21 @@ class InvoiceService(BaseService):
         
         if tax_config:
             cls.log_info(f"Found active tax config: {tax_config.tax_name} ({tax_config.tax_percentage}%)")
+            
+            # Cache the result
+            config_data = {
+                'id': tax_config.id,
+                'tax_name': tax_config.tax_name,
+                'tax_percentage': float(tax_config.tax_percentage),
+                'effective_from': tax_config.effective_from,
+                'effective_to': tax_config.effective_to,
+                'is_active': tax_config.is_active
+            }
+            
+            if date == datetime.now().date():
+                CacheService.set_active_tax_config_cache(config_data)
+            else:
+                CacheService.set_tax_config_by_date_cache(date, config_data)
         else:
             cls.log_warning(f"No active tax configuration found for date: {date}")
         

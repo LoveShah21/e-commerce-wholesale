@@ -1,4 +1,4 @@
-from rest_framework import generics, permissions, status
+from rest_framework import generics, permissions, status, filters
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
@@ -17,12 +17,19 @@ class InquiryListCreateView(generics.ListCreateAPIView):
     serializer_class = InquirySerializer
     permission_classes = (permissions.IsAuthenticated,)
     parser_classes = (MultiPartParser, FormParser, JSONParser)
+    filter_backends = (filters.OrderingFilter, filters.SearchFilter)
+    ordering_fields = ('inquiry_date', 'status')
+    ordering = ('-inquiry_date',)
+    search_fields = ('description',)
 
     def get_queryset(self):
+        """
+        Optimized queryset with select_related for user.
+        """
         user = self.request.user
         if user.user_type == 'admin':
-            return Inquiry.objects.all().order_by('-inquiry_date')
-        return Inquiry.objects.filter(user=user).order_by('-inquiry_date')
+            return Inquiry.objects.all().select_related('user').order_by('-inquiry_date')
+        return Inquiry.objects.filter(user=user).select_related('user').order_by('-inquiry_date')
 
     def perform_create(self, serializer):
         # Handle file upload if present
@@ -39,10 +46,18 @@ class InquiryDetailView(generics.RetrieveAPIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
+        """
+        Optimized queryset with select_related and prefetch_related.
+        """
         user = self.request.user
+        base_queryset = Inquiry.objects.all().select_related('user').prefetch_related(
+            'quotation_requests__variant_size__variant__product',
+            'quotation_requests__variant_size__size',
+            'quotation_requests__quotation_price'
+        )
         if user.user_type == 'admin':
-            return Inquiry.objects.all()
-        return Inquiry.objects.filter(user=user)
+            return base_queryset
+        return base_queryset.filter(user=user)
 
 class QuotationRequestCreateView(generics.CreateAPIView):
     serializer_class = QuotationRequestSerializer
@@ -59,7 +74,19 @@ class QuotationRequestCreateView(generics.CreateAPIView):
 class QuotationRequestDetailView(generics.RetrieveAPIView):
     serializer_class = QuotationRequestDetailSerializer
     permission_classes = (permissions.IsAuthenticated,)
-    queryset = QuotationRequest.objects.all()
+    
+    def get_queryset(self):
+        """
+        Optimized queryset with select_related and prefetch_related.
+        """
+        return QuotationRequest.objects.all().select_related(
+            'inquiry',
+            'inquiry__user',
+            'variant_size',
+            'variant_size__variant',
+            'variant_size__variant__product',
+            'variant_size__size'
+        ).prefetch_related('quotation_price')
 
 class QuotationPriceCreateView(generics.CreateAPIView):
     serializer_class = QuotationPriceCreateSerializer
@@ -150,12 +177,20 @@ class QuotationPriceAcceptRejectView(APIView):
 class ComplaintListCreateView(generics.ListCreateAPIView):
     serializer_class = ComplaintSerializer
     permission_classes = (permissions.IsAuthenticated,)
+    filter_backends = (filters.OrderingFilter, filters.SearchFilter)
+    ordering_fields = ('complaint_date', 'status', 'category')
+    ordering = ('-complaint_date',)
+    search_fields = ('description', 'category')
 
     def get_queryset(self):
+        """
+        Optimized queryset with select_related for user and order.
+        """
         user = self.request.user
+        base_queryset = Complaint.objects.all().select_related('user', 'order')
         if user.user_type == 'admin':
-            return Complaint.objects.all().order_by('-complaint_date')
-        return Complaint.objects.filter(user=user).order_by('-complaint_date')
+            return base_queryset.order_by('-complaint_date')
+        return base_queryset.filter(user=user).order_by('-complaint_date')
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -165,10 +200,14 @@ class ComplaintDetailView(generics.RetrieveAPIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
+        """
+        Optimized queryset with select_related for user and order.
+        """
         user = self.request.user
+        base_queryset = Complaint.objects.all().select_related('user', 'order')
         if user.user_type == 'admin':
-            return Complaint.objects.all()
-        return Complaint.objects.filter(user=user)
+            return base_queryset
+        return base_queryset.filter(user=user)
 
 class ComplaintStatusUpdateView(APIView):
     permission_classes = (IsAdmin,)
@@ -211,19 +250,30 @@ class FeedbackCreateView(generics.CreateAPIView):
 class FeedbackListView(generics.ListAPIView):
     serializer_class = FeedbackDetailSerializer
     permission_classes = (permissions.IsAuthenticated,)
+    filter_backends = (filters.OrderingFilter,)
+    ordering_fields = ('feedback_date', 'rating')
+    ordering = ('-feedback_date',)
 
     def get_queryset(self):
+        """
+        Optimized queryset with select_related for user and order.
+        """
         user = self.request.user
+        base_queryset = Feedback.objects.all().select_related('user', 'order')
         if user.user_type == 'admin':
-            return Feedback.objects.all().order_by('-feedback_date')
-        return Feedback.objects.filter(user=user).order_by('-feedback_date')
+            return base_queryset.order_by('-feedback_date')
+        return base_queryset.filter(user=user).order_by('-feedback_date')
 
 class FeedbackDetailView(generics.RetrieveAPIView):
     serializer_class = FeedbackDetailSerializer
     permission_classes = (permissions.IsAuthenticated,)
 
     def get_queryset(self):
+        """
+        Optimized queryset with select_related for user and order.
+        """
         user = self.request.user
+        base_queryset = Feedback.objects.all().select_related('user', 'order')
         if user.user_type == 'admin':
-            return Feedback.objects.all()
-        return Feedback.objects.filter(user=user)
+            return base_queryset
+        return base_queryset.filter(user=user)

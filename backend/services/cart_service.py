@@ -18,7 +18,7 @@ from services.base import BaseService
 from services.utils import calculate_total_with_tax
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('services.cart_service')
 
 
 class CartService(BaseService):

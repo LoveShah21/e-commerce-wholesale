@@ -1,11 +1,20 @@
 from rest_framework import serializers
 from .models import Inquiry, Complaint, Feedback, QuotationRequest, QuotationPrice
+from utils.security import validate_document_file, sanitize_filename
 
 class InquirySerializer(serializers.ModelSerializer):
     class Meta:
         model = Inquiry
         fields = '__all__'
         read_only_fields = ('user', 'status', 'inquiry_date')
+    
+    def validate_logo_file(self, value):
+        """Validate uploaded logo file."""
+        if value:
+            validate_document_file(value)
+            # Sanitize filename
+            value.name = sanitize_filename(value.name)
+        return value
 
 class InquiryDetailSerializer(serializers.ModelSerializer):
     quotation_requests = serializers.SerializerMethodField()

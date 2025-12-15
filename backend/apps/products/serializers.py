@@ -4,6 +4,7 @@ from .models import (
     ProductImage, Stock, Size, Sleeve, Pocket
 )
 from services.utils import generate_sku
+from utils.security import validate_image_file, sanitize_filename
 
 
 class ProductImageSerializer(serializers.ModelSerializer):
@@ -13,9 +14,19 @@ class ProductImageSerializer(serializers.ModelSerializer):
 
 
 class ProductImageCreateSerializer(serializers.ModelSerializer):
+    image_file = serializers.ImageField(write_only=True, required=False)
+    
     class Meta:
         model = ProductImage
-        fields = ('image_url', 'alt_text', 'is_primary', 'display_order')
+        fields = ('image_url', 'image_file', 'alt_text', 'is_primary', 'display_order')
+    
+    def validate_image_file(self, value):
+        """Validate uploaded image file."""
+        if value:
+            validate_image_file(value)
+            # Sanitize filename
+            value.name = sanitize_filename(value.name)
+        return value
 
 
 class StockSerializer(serializers.ModelSerializer):

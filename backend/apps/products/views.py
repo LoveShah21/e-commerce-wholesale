@@ -4,6 +4,7 @@ from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db import transaction
 from apps.users.permissions import IsAdminOrReadOnly, IsAdmin
+from services.cache_service import CacheService
 from .models import (
     Product, ProductVariant, VariantSize, Stock, ProductImage
 )
@@ -18,34 +19,129 @@ from .serializers import (
 class ProductListCreateView(generics.ListCreateAPIView):
     """
     List all products or create a new product.
-    GET: Public access
-    POST: Admin only
+    GET: Public access (with caching)
+    POST: Admin only (invalidates cache)
+    
+    Optimized with select_related and prefetch_related for better performance.
+    Implements caching for product list queries.
     """
-    queryset = Product.objects.all().prefetch_related('images', 'variants').order_by('-created_at')
+    queryset = Product.objects.all().prefetch_related(
+        'images',
+        'variants__fabric',
+        'variants__color',
+        'variants__pattern',
+        'variants__sleeve',
+        'variants__pocket'
+    ).order_by('-created_at')
     permission_classes = (IsAdminOrReadOnly,)
-    filter_backends = (DjangoFilterBackend, filters.SearchFilter)
+    filter_backends = (DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
     filterset_fields = ('variants__fabric', 'variants__color', 'variants__pattern')
     search_fields = ('product_name', 'description')
+    ordering_fields = ('product_name', 'created_at', 'updated_at')
+    ordering = ('-created_at',)
     
     def get_serializer_class(self):
         if self.request.method == 'POST':
             return ProductCreateSerializer
         return ProductListSerializer
+    
+    def list(self, request, *args, **kwargs):
+        """Override list to implement caching."""
+        # Build cache key from query parameters
+        filters = {
+            'fabric': request.query_params.get('variants__fabric'),
+            'color': request.query_params.get('variants__color'),
+            'pattern': request.query_params.get('variants__pattern'),
+            'search': request.query_params.get('search'),
+            'ordering': request.query_params.get('ordering', '-created_at'),
+            'page': request.query_params.get('page', '1'),
+        }
+        
+        # Try to get from cache
+        cached_response = CacheService.get_product_list_cache(filters)
+        if cached_response is not None:
+            return Response(cached_response)
+        
+        # Get data from database
+        response = super().list(request, *args, **kwargs)
+        
+        # Cache the response data
+        CacheService.set_product_list_cache(response.data, filters)
+        
+        return response
+    
+    def create(self, request, *args, **kwargs):
+        """Override create to invalidate cache."""
+        response = super().create(request, *args, **kwargs)
+        
+        # Invalidate product cache after creation
+        CacheService.invalidate_product_cache()
+        
+        return response
 
 
 class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     """
     Retrieve, update or delete a product.
-    GET: Public access
-    PUT/PATCH/DELETE: Admin only
+    GET: Public access (with caching)
+    PUT/PATCH/DELETE: Admin only (invalidates cache)
+    
+    Optimized with comprehensive prefetch_related and select_related.
+    Implements caching for product detail queries.
     """
-    queryset = Product.objects.all().prefetch_related('images', 'variants__sizes__size', 'variants__sizes__stock_record')
+    queryset = Product.objects.all().prefetch_related(
+        'images',
+        'variants__fabric',
+        'variants__color',
+        'variants__pattern',
+        'variants__sleeve',
+        'variants__pocket',
+        'variants__sizes__size',
+        'variants__sizes__stock_record'
+    )
     permission_classes = (IsAdminOrReadOnly,)
     
     def get_serializer_class(self):
         if self.request.method in ['PUT', 'PATCH']:
             return ProductUpdateSerializer
         return ProductDetailSerializer
+    
+    def retrieve(self, request, *args, **kwargs):
+        """Override retrieve to implement caching."""
+        product_id = kwargs.get('pk')
+        
+        # Try to get from cache
+        cached_data = CacheService.get_product_detail_cache(product_id)
+        if cached_data is not None:
+            return Response(cached_data)
+        
+        # Get data from database
+        response = super().retrieve(request, *args, **kwargs)
+        
+        # Cache the response data
+        CacheService.set_product_detail_cache(product_id, response.data)
+        
+        return response
+    
+    def update(self, request, *args, **kwargs):
+        """Override update to invalidate cache."""
+        response = super().update(request, *args, **kwargs)
+        
+        # Invalidate cache for this product and product list
+        product_id = kwargs.get('pk')
+        CacheService.invalidate_product_cache(product_id)
+        
+        return response
+    
+    def destroy(self, request, *args, **kwargs):
+        """Override destroy to invalidate cache."""
+        product_id = kwargs.get('pk')
+        response = super().destroy(request, *args, **kwargs)
+        
+        # Invalidate cache for this product and product list
+        CacheService.invalidate_product_cache(product_id)
+        
+        return response
 
 
 class ProductVariantListCreateView(APIView):
@@ -65,7 +161,12 @@ class ProductVariantListCreateView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
         
-        variants = product.variants.all().prefetch_related('sizes__size', 'sizes__stock_record')
+        variants = product.variants.all().select_related(
+            'fabric', 'color', 'pattern', 'sleeve', 'pocket'
+        ).prefetch_related(
+            'sizes__size',
+            'sizes__stock_record'
+        )
         serializer = ProductVariantSerializer(variants, many=True)
         return Response(serializer.data)
     
@@ -95,8 +196,20 @@ class ProductVariantDetailView(generics.RetrieveUpdateDestroyAPIView):
     Retrieve, update or delete a product variant.
     GET: Public access
     PUT/PATCH/DELETE: Admin only
+    
+    Optimized with select_related and prefetch_related.
     """
-    queryset = ProductVariant.objects.all().prefetch_related('sizes__size', 'sizes__stock_record')
+    queryset = ProductVariant.objects.all().select_related(
+        'product',
+        'fabric',
+        'color',
+        'pattern',
+        'sleeve',
+        'pocket'
+    ).prefetch_related(
+        'sizes__size',
+        'sizes__stock_record'
+    )
     permission_classes = (IsAdminOrReadOnly,)
     
     def get_serializer_class(self):

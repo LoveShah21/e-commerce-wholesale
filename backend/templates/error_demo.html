@@ -1,0 +1,244 @@
+{% extends 'base.html' %}
+
+{% block title %}Error Handling Demo - Vaitikan City{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">Error Handling & User Feedback Demo</h1>
+            <p class="lead text-muted">This page demonstrates all error handling and loading state features.</p>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Toast Notifications</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button class="btn btn-success"
+                            onclick="VaitikanApp.showToast('Operation successful!', 'success')">
+                            Success Toast
+                        </button>
+                        <button class="btn btn-danger" onclick="VaitikanApp.showToast('An error occurred!', 'error')">
+                            Error Toast
+                        </button>
+                        <button class="btn btn-warning" onclick="VaitikanApp.showToast('Warning message', 'warning')">
+                            Warning Toast
+                        </button>
+                        <button class="btn btn-info" onclick="VaitikanApp.showToast('Information message', 'info')">
+                            Info Toast
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading States -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Loading States</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex gap-2 flex-wrap mb-3">
+                        <button class="btn btn-primary" id="btnLoadingDemo">
+                            Button Loading Demo
+                        </button>
+                        <button class="btn btn-secondary" id="btnElementLoading">
+                            Element Loading Demo
+                        </button>
+                        <button class="btn btn-info" id="btnSkeletonDemo">
+                            Skeleton Loading Demo
+                        </button>
+                        <button class="btn btn-success" id="btnProgressDemo">
+                            Progress Bar Demo
+                        </button>
+                    </div>
+                    <div id="loadingDemoArea" class="border rounded p-4 bg-light"
+                        style="min-height: 200px; position: relative;">
+                        <h6>Demo Area</h6>
+                        <p>This area will show different loading states.</p>
+                        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut
+                            labore et dolore magna aliqua.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Validation -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Form Validation</h5>
+                </div>
+                <div class="card-body">
+                    <form id="demoForm" data-validate>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email *</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="phone" class="form-label">Phone *</label>
+                            <input type="tel" class="form-control" id="phone" name="phone" required data-validate-phone>
+                        </div>
+                        <div class="mb-3">
+                            <label for="quantity" class="form-label">Quantity *</label>
+                            <input type="number" class="form-control" id="quantity" name="quantity" required min="1"
+                                max="100">
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password *</label>
+                            <input type="password" class="form-control" id="password" name="password" required
+                                minlength="8">
+                        </div>
+                        <div class="mb-3">
+                            <label for="confirmPassword" class="form-label">Confirm Password *</label>
+                            <input type="password" class="form-control" id="confirmPassword" name="confirmPassword"
+                                required data-match="password" data-match-message="Passwords do not match">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Submit Form</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">API Error Simulation</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-column gap-2">
+                        <button class="btn btn-outline-danger" onclick="simulateError(400)">
+                            400 - Validation Error
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="simulateError(401)">
+                            401 - Authentication Error
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="simulateError(403)">
+                            403 - Authorization Error
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="simulateError(404)">
+                            404 - Not Found
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="simulateError(500)">
+                            500 - Server Error
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="simulateNetworkError()">
+                            Network Error
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Confirmation Modals</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button class="btn btn-primary"
+                            onclick="VaitikanApp.showConfirm('Are you sure?', () => alert('Confirmed!'))">
+                            Confirm Modal
+                        </button>
+                        <button class="btn btn-danger"
+                            onclick="VaitikanApp.showDeleteConfirm('Delete this item?', () => alert('Deleted!'))">
+                            Delete Confirm Modal
+                        </button>
+                        <button class="btn btn-info"
+                            onclick="VaitikanApp.showInfo('<p>This is some information.</p><ul><li>Point 1</li><li>Point 2</li></ul>', 'Information')">
+                            Info Modal
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Button loading demo
+    document.getElementById('btnLoadingDemo').addEventListener('click', function () {
+        const restore = LoadingStates.showButtonLoading(this, 'Processing...');
+        setTimeout(restore, 3000);
+    });
+
+    // Element loading demo
+    document.getElementById('btnElementLoading').addEventListener('click', function () {
+        const area = document.getElementById('loadingDemoArea');
+        const hide = LoadingStates.showElementLoading(area, 'Loading content...');
+        setTimeout(hide, 3000);
+    });
+
+    // Skeleton loading demo
+    document.getElementById('btnSkeletonDemo').addEventListener('click', function () {
+        const area = document.getElementById('loadingDemoArea');
+        const restore = LoadingStates.showSkeleton(area, 5);
+        setTimeout(restore, 3000);
+    });
+
+    // Progress bar demo
+    document.getElementById('btnProgressDemo').addEventListener('click', function () {
+        const area = document.getElementById('loadingDemoArea');
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += 10;
+            LoadingStates.showProgress(area, progress, 'Processing...');
+            if (progress >= 100) {
+                clearInterval(interval);
+                setTimeout(() => LoadingStates.hideProgress(area), 1000);
+            }
+        }, 300);
+    });
+
+    // Simulate API errors
+    async function simulateError(statusCode) {
+        try {
+            const response = await fetch(`https://httpstat.us/${statusCode}`, {
+                method: 'GET'
+            });
+
+            if (!response.ok) {
+                const error = await ErrorHandler.parseErrorResponse(response);
+                ErrorHandler.displayError(error, { showToast: true });
+                ErrorHandler.logError(error, 'simulateError');
+            }
+        } catch (error) {
+            ErrorHandler.displayError({
+                type: ErrorHandler.ErrorTypes.NETWORK,
+                message: 'Network error occurred',
+                details: error.message
+            }, { showToast: true });
+        }
+    }
+
+    // Simulate network error
+    function simulateNetworkError() {
+        ErrorHandler.displayError({
+            type: ErrorHandler.ErrorTypes.NETWORK,
+            message: ErrorHandler.ErrorMessages[ErrorHandler.ErrorTypes.NETWORK],
+            details: 'Simulated network failure'
+        }, { showToast: true });
+    }
+
+    // Form submission demo
+    document.getElementById('demoForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        VaitikanApp.showToast('Form validation passed!', 'success');
+    });
+</script>
+{% endblock %}

@@ -113,7 +113,7 @@
                         <select class="form-select" id="status" name="status" required>
                             {% for value, label in status_choices %}
                             <option value="{{ value }}" {% if complaint.status==value %}selected{% endif %}>
-                                {{ label %}
+                                {{ label %}}
                             </option>
                             {% endfor %}
                         </select>

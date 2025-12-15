@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+
+{% block title %}Order Payment - Vaitikan City{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Order Details -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-box-seam me-2"></i>Order #{{ order.id }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Order Date:</strong></p>
+                            <p class="text-muted">{{ order.order_date|date:"F d, Y H:i" }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Status:</strong></p>
+                            <span class="badge 
+                                {% if order.status == 'pending' %}bg-warning
+                                {% elif order.status == 'confirmed' %}bg-info
+                                {% elif order.status == 'processing' %}bg-primary
+                                {% elif order.status == 'dispatched' %}bg-success
+                                {% elif order.status == 'delivered' %}bg-success
+                                {% elif order.status == 'cancelled' %}bg-danger
+                                {% else %}bg-secondary{% endif %}">
+                                {{ order.get_status_display }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Order Items -->
+                    <h6 class="mb-3">Order Items</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Quantity</th>
+                                    <th>Price</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in order.items.all %}
+                                <tr>
+                                    <td>
+                                        {{ item.variant_size.variant.product.product_name }}
+                                        <br>
+                                        <small class="text-muted">
+                                            {{ item.variant_size.variant.color.color_name }} -
+                                            {{ item.variant_size.size.size_code }}
+                                        </small>
+                                    </td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td>₹{{ item.snapshot_unit_price }}</td>
+                                    <td>₹{{ item.snapshot_unit_price|floatformat:2 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment History -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clock-history me-2"></i>Payment History
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if payments %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Payment ID</th>
+                                    <th>Type</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payment in payments %}
+                                <tr>
+                                    <td>#{{ payment.id }}</td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if payment.payment_type == 'advance' %}bg-info
+                                            {% elif payment.payment_type == 'final' %}bg-primary
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ payment.payment_type_display }}
+                                        </span>
+                                    </td>
+                                    <td>₹{{ payment.amount }}</td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if payment.payment_status == 'success' %}bg-success
+                                            {% elif payment.payment_status == 'failed' %}bg-danger
+                                            {% elif payment.payment_status == 'pending' %}bg-warning
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ payment.payment_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if payment.paid_at %}
+                                        {{ payment.paid_at|date:"M d, Y H:i" }}
+                                        {% else %}
+                                        {{ payment.created_at|date:"M d, Y H:i" }}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0">No payments yet</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Payment Summary -->
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Payment Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Total Amount:</span>
+                        <strong>₹{{ payment_status.total_due }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Amount Paid:</span>
+                        <strong class="text-success">₹{{ payment_status.total_paid }}</strong>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <span><strong>Balance Due:</strong></span>
+                        <strong class="text-danger">
+                            ₹{{ payment_status.total_due|floatformat:2 }}
+                        </strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Actions -->
+            <div class="card">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Payment Actions</h5>
+                </div>
+                <div class="card-body">
+                    {% if not payment_status.advance_paid %}
+                    <!-- Advance Payment -->
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Advance Payment Required</strong>
+                        <p class="mb-0 small">Pay 50% to confirm your order</p>
+                    </div>
+                    <button type="button" class="btn btn-primary w-100 mb-3"
+                        onclick="initiatePayment({{ order.id }}, 'advance')">
+                        <i class="bi bi-credit-card me-2"></i>Pay Advance (50%)
+                    </button>
+                    {% elif not payment_status.final_paid %}
+                    <!-- Final Payment -->
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Final Payment Pending</strong>
+                        <p class="mb-0 small">Pay remaining 50% before dispatch</p>
+                    </div>
+                    <button type="button" class="btn btn-success w-100 mb-3"
+                        onclick="initiatePayment({{ order.id }}, 'final')">
+                        <i class="bi bi-credit-card me-2"></i>Pay Final Amount (50%)
+                    </button>
+                    {% else %}
+                    <!-- Fully Paid -->
+                    <div class="alert alert-success">
+                        <i class="bi bi-check-circle me-2"></i>
+                        <strong>Payment Complete</strong>
+                        <p class="mb-0 small">All payments have been received</p>
+                    </div>
+                    {% endif %}
+
+                    <a href="{% url 'order-list-web' %}" class="btn btn-outline-secondary w-100">
+                        <i class="bi bi-arrow-left me-2"></i>Back to Orders
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+    const RAZORPAY_KEY_ID = '{{ razorpay_key_id }}';
+</script>
+<script src="/static/js/payment.js"></script>
+{% endblock %}

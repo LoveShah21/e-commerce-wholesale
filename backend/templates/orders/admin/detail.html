@@ -326,6 +326,28 @@
             </div>
         </div>
         {% endif %}
+
+        <!-- Invoice -->
+        {% if payment_completion.advance_paid %}
+        <div class="card mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-file-earmark-text me-2"></i>Invoice</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Invoice is available for orders with successful payments.
+                </p>
+                <a href="{% url 'invoice-preview-web' order.id %}" class="btn btn-outline-primary w-100 mb-2"
+                    target="_blank">
+                    <i class="bi bi-eye me-2"></i>Preview Invoice
+                </a>
+                <a href="/api/invoices/{{ order.id }}/download/" class="btn btn-primary w-100" target="_blank">
+                    <i class="bi bi-download me-2"></i>Download Invoice PDF
+                </a>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 

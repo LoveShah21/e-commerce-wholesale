@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}{{ product.product_name }} - Vaitikan City{% endblock %}
 
@@ -172,6 +173,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'js/cart.js' %}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         // Handle size selection
@@ -180,12 +182,26 @@
                 const variantId = this.dataset.variantId;
                 const addToCartBtn = document.querySelector(`.add-to-cart-btn[data-variant-id="${variantId}"]`);
                 addToCartBtn.disabled = false;
+
+                // Update price display with dynamic calculation
+                updatePriceDisplay(variantId, this);
+            });
+        });
+
+        // Handle quantity change for dynamic price calculation
+        document.querySelectorAll('input[id^="quantity_"]').forEach(input => {
+            input.addEventListener('input', function () {
+                const variantId = this.id.replace('quantity_', '');
+                const selectedSize = document.querySelector(`input[name="variant_size_${variantId}"]:checked`);
+                if (selectedSize) {
+                    updatePriceDisplay(variantId, selectedSize);
+                }
             });
         });
 
         // Handle add to cart
         document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
-            btn.addEventListener('click', function () {
+            btn.addEventListener('click', async function () {
                 const variantId = this.dataset.variantId;
                 const selectedSize = document.querySelector(`input[name="variant_size_${variantId}"]:checked`);
 
@@ -195,84 +211,97 @@
                 }
 
                 const variantSizeId = selectedSize.value;
-                const quantity = document.getElementById(`quantity_${variantId}`).value;
-                const stock = parseInt(selectedSize.dataset.stock);
+                const quantityInput = document.getElementById(`quantity_${variantId}`);
+                const quantity = quantityInput.value;
 
-                if (parseInt(quantity) > stock) {
-                    VaitikanApp.showToast(`Only ${stock} items available in stock`, 'error');
+                // Validate quantity
+                const validation = CartModule.validateQuantity(quantity, parseInt(selectedSize.dataset.stock));
+                if (!validation.isValid) {
+                    VaitikanApp.showToast(validation.message, 'error');
                     return;
                 }
 
-                // Add to cart via API
-                addToCart(variantSizeId, quantity);
+                try {
+                    await CartModule.addToCart(variantSizeId, quantity);
+                    // Reset quantity to 1 after successful add
+                    quantityInput.value = 1;
+                    // Uncheck size selection
+                    selectedSize.checked = false;
+                    this.disabled = true;
+                } catch (error) {
+                    VaitikanApp.showToast(error.message, 'error');
+                }
             });
         });
 
-        function addToCart(variantSizeId, quantity) {
-            VaitikanApp.showLoading('Adding to cart...');
+        function updatePriceDisplay(variantId, sizeRadio) {
+            const price = parseFloat(sizeRadio.dataset.price);
+            const quantityInput = document.getElementById(`quantity_${variantId}`);
+            const quantity = parseInt(quantityInput.value) || 1;
+            const total = price * quantity;
 
-            fetch('/api/cart/items/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-                body: JSON.stringify({
-                    variant_size: variantSizeId,
-                    quantity: parseInt(quantity)
-                })
-            })
-                .then(response => {
-                    if (!response.ok) {
-                        return response.json().then(err => Promise.reject(err));
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    VaitikanApp.hideLoading();
-                    VaitikanApp.showToast('Item added to cart successfully!', 'success');
-                    // Update cart count if you have a cart badge
-                    updateCartCount();
-                })
-                .catch(error => {
-                    VaitikanApp.hideLoading();
-                    const message = error.detail || error.message || 'Failed to add item to cart';
-                    VaitikanApp.showToast(message, 'error');
-                });
-        }
-
-        function updateCartCount() {
-            fetch('/api/cart/', {
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken')
-                }
-            })
-                .then(response => response.json())
-                .then(data => {
-                    const cartBadge = document.getElementById('cartCount');
-                    if (cartBadge && data.items) {
-                        const totalItems = data.items.reduce((sum, item) => sum + item.quantity, 0);
-                        cartBadge.textContent = totalItems;
-                        cartBadge.style.display = totalItems > 0 ? 'inline' : 'none';
-                    }
-                })
-                .catch(error => console.error('Error updating cart count:', error));
-        }
-
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
+            // Find or create price display element
+            let priceDisplay = document.querySelector(`#price-display-${variantId}`);
+            if (!priceDisplay) {
+                const addToCartBtn = document.querySelector(`.add-to-cart-btn[data-variant-id="${variantId}"]`);
+                priceDisplay = document.createElement('div');
+                priceDisplay.id = `price-display-${variantId}`;
+                priceDisplay.className = 'alert alert-info mt-2 mb-0';
+                addToCartBtn.parentNode.parentNode.appendChild(priceDisplay);
             }
-            return cookieValue;
+
+            priceDisplay.innerHTML = `
+                <strong>Total:</strong> ${CartModule.formatPrice(total)}
+                <small class="d-block text-muted">${CartModule.formatPrice(price)} × ${quantity}</small>
+            `;
         }
+
+        // Real-time stock checking for selected sizes
+        let stockCheckInterval;
+        document.querySelectorAll('input[type="radio"][name^="variant_size_"]').forEach(radio => {
+            radio.addEventListener('change', function () {
+                // Clear previous interval
+                if (stockCheckInterval) {
+                    clearInterval(stockCheckInterval);
+                }
+
+                const variantSizeId = this.value;
+                const stockDisplay = this.parentElement.querySelector('small');
+
+                // Check stock every 15 seconds
+                stockCheckInterval = setInterval(async () => {
+                    try {
+                        const stock = await CartModule.checkStockAvailability(variantSizeId);
+                        const available = stock.available;
+
+                        // Update stock display
+                        if (available === 0) {
+                            stockDisplay.className = 'text-danger';
+                            stockDisplay.textContent = 'Out of Stock';
+                            this.disabled = true;
+                        } else if (available < 5) {
+                            stockDisplay.className = 'text-warning';
+                            stockDisplay.textContent = `Only ${available} left`;
+                        } else {
+                            stockDisplay.className = 'text-success';
+                            stockDisplay.textContent = 'In Stock';
+                        }
+
+                        // Update data attribute
+                        this.dataset.stock = available;
+                    } catch (error) {
+                        console.error('Stock check error:', error);
+                    }
+                }, 15000);
+            });
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function () {
+            if (stockCheckInterval) {
+                clearInterval(stockCheckInterval);
+            }
+        });
     });
 </script>
 {% endblock %}

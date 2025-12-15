@@ -1,0 +1,101 @@
+[
+  {
+    "model": "support.inquiry",
+    "pk": 1,
+    "fields": {
+      "user": 5,
+      "inquiry_description": "I need 100 custom shirts with our company logo for corporate event. Can you provide a quotation?",
+      "logo_file_url": "/media/logos/company_logo_1.png",
+      "status": "quoted",
+      "inquiry_date": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "support.inquiry",
+    "pk": 2,
+    "fields": {
+      "user": 3,
+      "inquiry_description": "Looking for bulk order of 50 formal shirts in different sizes. Need delivery within 2 weeks.",
+      "logo_file_url": null,
+      "status": "pending",
+      "inquiry_date": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "support.quotationrequest",
+    "pk": 1,
+    "fields": {
+      "inquiry": 1,
+      "variant_size": 1,
+      "requested_quantity": 100,
+      "customization_type": "Logo Printing",
+      "customization_details": "Company logo on left chest pocket area",
+      "status": "quoted",
+      "requested_date": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "support.quotationprice",
+    "pk": 1,
+    "fields": {
+      "quotation": 1,
+      "unit_price": "850.00",
+      "customization_charge_per_unit": "50.00",
+      "quoted_quantity": 100,
+      "valid_from": "2024-12-10T00:00:00Z",
+      "valid_until": "2024-12-25T23:59:59Z",
+      "status": "sent",
+      "quoted_date": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "support.complaint",
+    "pk": 1,
+    "fields": {
+      "user": 4,
+      "order": 3,
+      "complaint_description": "One button was loose on the delivered shirt",
+      "complaint_category": "Quality Issue",
+      "status": "resolved",
+      "resolution_date": "2024-12-13T15:30:00Z",
+      "resolution_notes": "Replacement shirt sent to customer",
+      "complaint_date": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "support.complaint",
+    "pk": 2,
+    "fields": {
+      "user": 3,
+      "order": 1,
+      "complaint_description": "Delivery was delayed by 2 days",
+      "complaint_category": "Delivery Issue",
+      "status": "in_progress",
+      "resolution_date": null,
+      "resolution_notes": null,
+      "complaint_date": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "support.feedback",
+    "pk": 1,
+    "fields": {
+      "user": 4,
+      "order": 3,
+      "rating": 4,
+      "feedback_description": "Good quality shirt, fast delivery. Minor issue with button which was resolved quickly.",
+      "feedback_date": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "support.feedback",
+    "pk": 2,
+    "fields": {
+      "user": 5,
+      "order": 2,
+      "rating": 5,
+      "feedback_description": "Excellent quality and perfect fit. Very satisfied with the purchase.",
+      "feedback_date": "2024-01-01T00:00:00Z"
+    }
+  }
+]

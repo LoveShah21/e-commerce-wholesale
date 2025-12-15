@@ -1,4 +1,4 @@
-from rest_framework import generics, permissions, status, viewsets
+from rest_framework import generics, permissions, status, viewsets, filters
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -8,9 +8,30 @@ from services.cart_service import CartService
 
 class OrderListCreateView(generics.ListCreateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
+    filter_backends = (filters.OrderingFilter,)
+    ordering_fields = ('order_date', 'status')
+    ordering = ('-order_date',)
     
     def get_queryset(self):
-        return Order.objects.filter(user=self.request.user).order_by('-order_date')
+        """
+        Optimized queryset with select_related and prefetch_related.
+        """
+        return Order.objects.filter(
+            user=self.request.user
+        ).select_related(
+            'user',
+            'delivery_address',
+            'delivery_address__postal_code',
+            'delivery_address__postal_code__city',
+            'delivery_address__postal_code__city__state',
+            'delivery_address__postal_code__city__state__country'
+        ).prefetch_related(
+            'items__variant_size__variant__product',
+            'items__variant_size__variant__fabric',
+            'items__variant_size__variant__color',
+            'items__variant_size__variant__pattern',
+            'items__variant_size__size'
+        ).order_by('-order_date')
     
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -22,14 +43,46 @@ class OrderDetailView(generics.RetrieveAPIView):
     permission_classes = (permissions.IsAuthenticated,)
     
     def get_queryset(self):
-        return Order.objects.filter(user=self.request.user)
+        """
+        Optimized queryset with select_related and prefetch_related.
+        """
+        return Order.objects.filter(
+            user=self.request.user
+        ).select_related(
+            'user',
+            'delivery_address',
+            'delivery_address__postal_code',
+            'delivery_address__postal_code__city',
+            'delivery_address__postal_code__city__state',
+            'delivery_address__postal_code__city__state__country'
+        ).prefetch_related(
+            'items__variant_size__variant__product',
+            'items__variant_size__variant__fabric',
+            'items__variant_size__variant__color',
+            'items__variant_size__variant__pattern',
+            'items__variant_size__size',
+            'items__variant_size__stock_record'
+        )
 
 class CartViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
     serializer_class = CartSerializer
     
     def get_queryset(self):
-        return Cart.objects.filter(user=self.request.user, status='active')
+        """
+        Optimized queryset with prefetch_related for cart items.
+        """
+        return Cart.objects.filter(
+            user=self.request.user,
+            status='active'
+        ).prefetch_related(
+            'items__variant_size__variant__product',
+            'items__variant_size__variant__fabric',
+            'items__variant_size__variant__color',
+            'items__variant_size__variant__pattern',
+            'items__variant_size__size',
+            'items__variant_size__stock_record'
+        )
     
     def list(self, request, *args, **kwargs):
         """Get or create active cart with totals"""
@@ -66,7 +119,21 @@ class CartItemViewSet(viewsets.ModelViewSet):
     serializer_class = CartItemSerializer
     
     def get_queryset(self):
-        return CartItem.objects.filter(cart__user=self.request.user, cart__status='active')
+        """
+        Optimized queryset with select_related and prefetch_related.
+        """
+        return CartItem.objects.filter(
+            cart__user=self.request.user,
+            cart__status='active'
+        ).select_related(
+            'cart',
+            'variant_size__variant__product',
+            'variant_size__variant__fabric',
+            'variant_size__variant__color',
+            'variant_size__variant__pattern',
+            'variant_size__size',
+            'variant_size__stock_record'
+        )
     
     def create(self, request, *args, **kwargs):
         """Add item to cart using CartService"""

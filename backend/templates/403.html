@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Access Denied - Vaitikan City{% endblock %}
+
+{% block sidebar %}
+<!-- No sidebar on error pages -->
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center align-items-center" style="min-height: 60vh;">
+        <div class="col-md-8 col-lg-6 text-center">
+            <div class="error-page">
+                <div class="error-code mb-4">
+                    <i class="bi bi-shield-lock-fill text-danger" style="font-size: 6rem;"></i>
+                </div>
+                <h1 class="display-1 fw-bold text-danger">403</h1>
+                <h2 class="mb-4">Access Denied</h2>
+                <p class="lead text-muted mb-4">
+                    Sorry, you don't have permission to access this page.
+                </p>
+
+                {% if not user.is_authenticated %}
+                <div class="alert alert-info mb-4">
+                    <i class="bi bi-info-circle me-2"></i>
+                    You may need to log in to access this resource.
+                </div>
+                <div class="d-flex gap-3 justify-content-center flex-wrap">
+                    <a href="{% url 'users:login' %}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>Login
+                    </a>
+                    <a href="{% url 'users:register' %}" class="btn btn-outline-primary btn-lg">
+                        <i class="bi bi-person-plus me-2"></i>Register
+                    </a>
+                </div>
+                {% else %}
+                <div class="alert alert-warning mb-4">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Your account doesn't have the required permissions for this action.
+                </div>
+                <div class="d-flex gap-3 justify-content-center flex-wrap">
+                    <a href="{% url 'index' %}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-house-door me-2"></i>Go to Homepage
+                    </a>
+                    <button onclick="window.history.back()" class="btn btn-outline-secondary btn-lg">
+                        <i class="bi bi-arrow-left me-2"></i>Go Back
+                    </button>
+                </div>
+                {% endif %}
+
+                {% if user.is_authenticated %}
+                <div class="mt-5">
+                    <p class="text-muted">Your accessible pages:</p>
+                    <div class="d-flex gap-2 justify-content-center flex-wrap">
+                        {% if user.user_type == 'customer' %}
+                        <a href="{% url 'products:product_list_web' %}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-shop me-1"></i>Products
+                        </a>
+                        <a href="{% url 'orders:order_list_web' %}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-box-seam me-1"></i>My Orders
+                        </a>
+                        <a href="{% url 'orders:cart_view_web' %}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-cart me-1"></i>Cart
+                        </a>
+                        {% elif user.user_type == 'admin' %}
+                        <a href="{% url 'dashboard:admin_dashboard' %}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-speedometer2 me-1"></i>Dashboard
+                        </a>
+                        <a href="{% url 'products:admin_product_list' %}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-box me-1"></i>Products
+                        </a>
+                        <a href="{% url 'orders:admin_order_list' %}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-receipt me-1"></i>Orders
+                        </a>
+                        {% elif user.user_type == 'operator' %}
+                        <a href="{% url 'dashboard:operator_dashboard' %}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-speedometer2 me-1"></i>Dashboard
+                        </a>
+                        <a href="{% url 'manufacturing:specification_list' %}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-gear me-1"></i>Manufacturing
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

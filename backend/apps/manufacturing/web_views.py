@@ -3,11 +3,12 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
 from django.db import transaction
+from django.db.models import Q
 from django.views.decorators.http import require_http_methods
 import json
 from apps.users.models import City
 from apps.users.permissions import admin_or_operator_required
-from .models import RawMaterial, MaterialType, Supplier, MaterialSupplier
+from .models import RawMaterial, MaterialType, Supplier, MaterialSupplier, ManufacturingSpecification
 from .services import ManufacturingService
 import logging
 
@@ -640,3 +641,352 @@ def material_type_create(request):
             })
     
     return render(request, 'inventory/material_type_form.html')
+
+
+# Manufacturing Specification Views
+
+@login_required
+@admin_or_operator_required
+def manufacturing_spec_list(request):
+    """
+    Display list of manufacturing specifications with filters.
+    Validates: Requirements 10.1
+    """
+    from apps.products.models import Product, ProductVariant
+    from .models import ManufacturingSpecification
+    
+    search_query = request.GET.get('search', '')
+    material_id = request.GET.get('material', '')
+    product_id = request.GET.get('product', '')
+    
+    specifications = ManufacturingSpecification.objects.select_related(
+        'variant_size__variant__product',
+        'variant_size__variant__fabric',
+        'variant_size__variant__color',
+        'variant_size__variant__pattern',
+        'variant_size__size',
+        'material__material_type'
+    ).order_by('-created_at')
+    
+    if search_query:
+        specifications = specifications.filter(
+            variant_size__variant__product__product_name__icontains=search_query
+        )
+    
+    if material_id:
+        specifications = specifications.filter(material_id=material_id)
+    
+    if product_id:
+        specifications = specifications.filter(variant_size__variant__product_id=product_id)
+    
+    # Add unit cost calculation
+    specs_with_cost = []
+    for spec in specifications:
+        spec.unit_cost = spec.material.unit_price * spec.quantity_required
+        specs_with_cost.append(spec)
+    
+    materials = RawMaterial.objects.all().order_by('material_name')
+    products = Product.objects.all().order_by('product_name')
+    
+    context = {
+        'specifications': specs_with_cost,
+        'materials': materials,
+        'products': products,
+        'search_query': search_query,
+        'selected_material': material_id,
+        'selected_product': product_id,
+    }
+    
+    return render(request, 'manufacturing/specification_list.html', context)
+
+
+@login_required
+@admin_or_operator_required
+def manufacturing_spec_create(request):
+    """
+    Create a new manufacturing specification.
+    Validates: Requirements 10.1
+    """
+    from apps.products.models import Product, VariantSize
+    
+    if request.method == 'POST':
+        try:
+            variant_size_id = request.POST.get('variant_size')
+            material_id = request.POST.get('material')
+            quantity_required = request.POST.get('quantity_required')
+            
+            if not all([variant_size_id, material_id, quantity_required]):
+                messages.error(request, 'All fields are required.')
+                return render(request, 'manufacturing/specification_form.html', {
+                    'products': Product.objects.all(),
+                    'materials': RawMaterial.objects.select_related('material_type').all(),
+                    'form_error': 'All fields are required'
+                })
+            
+            # Check if specification already exists
+            existing = ManufacturingSpecification.objects.filter(
+                variant_size_id=variant_size_id,
+                material_id=material_id
+            ).first()
+            
+            if existing:
+                messages.error(request, 'A specification for this variant size and material already exists.')
+                return render(request, 'manufacturing/specification_form.html', {
+                    'products': Product.objects.all(),
+                    'materials': RawMaterial.objects.select_related('material_type').all(),
+                    'form_error': 'Specification already exists'
+                })
+            
+            with transaction.atomic():
+                spec = ManufacturingSpecification.objects.create(
+                    variant_size_id=variant_size_id,
+                    material_id=material_id,
+                    quantity_required=quantity_required
+                )
+            
+            messages.success(request, 'Manufacturing specification created successfully.')
+            logger.info(f"Created manufacturing specification: {spec} by user {request.user.id}")
+            return redirect('manufacturing-spec-list-web')
+            
+        except Exception as e:
+            logger.error(f"Error creating manufacturing specification: {str(e)}")
+            messages.error(request, f'Error: {str(e)}')
+            return render(request, 'manufacturing/specification_form.html', {
+                'products': Product.objects.all(),
+                'materials': RawMaterial.objects.select_related('material_type').all(),
+                'form_error': str(e)
+            })
+    
+    products = Product.objects.all().order_by('product_name')
+    materials = RawMaterial.objects.select_related('material_type').order_by('material_name')
+    
+    return render(request, 'manufacturing/specification_form.html', {
+        'products': products,
+        'materials': materials
+    })
+
+
+@login_required
+@admin_or_operator_required
+def manufacturing_spec_edit(request, spec_id):
+    """
+    Edit an existing manufacturing specification.
+    Validates: Requirements 10.1
+    """
+    from apps.products.models import Product
+    
+    spec = get_object_or_404(
+        ManufacturingSpecification.objects.select_related(
+            'variant_size__variant__product',
+            'variant_size__variant__fabric',
+            'variant_size__variant__color',
+            'variant_size__variant__pattern',
+            'variant_size__size',
+            'material__material_type'
+        ),
+        id=spec_id
+    )
+    
+    if request.method == 'POST':
+        try:
+            quantity_required = request.POST.get('quantity_required')
+            
+            if not quantity_required:
+                messages.error(request, 'Quantity required is mandatory.')
+                return render(request, 'manufacturing/specification_form.html', {
+                    'specification': spec,
+                    'products': Product.objects.all(),
+                    'materials': RawMaterial.objects.select_related('material_type').all(),
+                    'form_error': 'Quantity required is mandatory'
+                })
+            
+            with transaction.atomic():
+                spec.quantity_required = quantity_required
+                spec.save()
+            
+            messages.success(request, 'Manufacturing specification updated successfully.')
+            logger.info(f"Updated manufacturing specification: {spec} by user {request.user.id}")
+            return redirect('manufacturing-spec-list-web')
+            
+        except Exception as e:
+            logger.error(f"Error updating manufacturing specification: {str(e)}")
+            messages.error(request, f'Error: {str(e)}')
+    
+    products = Product.objects.all().order_by('product_name')
+    materials = RawMaterial.objects.select_related('material_type').order_by('material_name')
+    
+    return render(request, 'manufacturing/specification_form.html', {
+        'specification': spec,
+        'products': products,
+        'materials': materials
+    })
+
+
+@login_required
+@admin_or_operator_required
+@require_http_methods(["POST"])
+def manufacturing_spec_delete(request, spec_id):
+    """
+    Delete a manufacturing specification.
+    """
+    try:
+        spec = get_object_or_404(ManufacturingSpecification, id=spec_id)
+        
+        with transaction.atomic():
+            spec.delete()
+        
+        messages.success(request, 'Manufacturing specification deleted successfully.')
+        logger.info(f"Deleted manufacturing specification by user {request.user.id}")
+        
+    except Exception as e:
+        logger.error(f"Error deleting manufacturing specification: {str(e)}")
+        messages.error(request, f'Error: {str(e)}')
+    
+    return redirect('manufacturing-spec-list-web')
+
+
+# Manufacturing Orders Views
+
+@login_required
+@admin_or_operator_required
+def manufacturing_orders_list(request):
+    """
+    Display list of orders for manufacturing with production feasibility.
+    Validates: Requirements 10.2, 10.5
+    """
+    from apps.orders.models import Order
+    from django.db.models import Count, Sum
+    
+    status_filter = request.GET.get('status', '')
+    feasibility_filter = request.GET.get('feasibility', '')
+    search_query = request.GET.get('search', '')
+    
+    # Get orders that are confirmed or in production
+    orders = Order.objects.select_related('user').prefetch_related(
+        'items__variant_size__variant__product',
+        'items__variant_size__size'
+    ).filter(
+        status__in=['confirmed', 'processing', 'dispatched']
+    ).order_by('-order_date')
+    
+    if status_filter:
+        orders = orders.filter(status=status_filter)
+    
+    if search_query:
+        orders = orders.filter(
+            Q(id__icontains=search_query) |
+            Q(user__full_name__icontains=search_query)
+        )
+    
+    # Add production feasibility and item counts
+    orders_with_data = []
+    for order in orders:
+        is_feasible, missing = ManufacturingService.check_production_feasibility(order)
+        
+        # Check if materials already consumed (order is processing or later)
+        materials_consumed = order.status in ['processing', 'dispatched', 'delivered']
+        
+        order.is_feasible = is_feasible
+        order.materials_consumed = materials_consumed
+        order.total_items = order.items.count()
+        order.total_quantity = order.items.aggregate(Sum('quantity'))['quantity__sum'] or 0
+        
+        # Apply feasibility filter
+        if feasibility_filter == 'feasible' and not is_feasible:
+            continue
+        if feasibility_filter == 'not_feasible' and is_feasible:
+            continue
+        
+        orders_with_data.append(order)
+    
+    context = {
+        'orders': orders_with_data,
+        'status_filter': status_filter,
+        'feasibility_filter': feasibility_filter,
+        'search_query': search_query,
+    }
+    
+    return render(request, 'manufacturing/orders_list.html', context)
+
+
+@login_required
+@admin_or_operator_required
+def manufacturing_order_materials(request, order_id):
+    """
+    Display material requirements for a specific order with consumption interface.
+    Validates: Requirements 10.2, 10.3, 10.5
+    """
+    from apps.orders.models import Order
+    from decimal import Decimal
+    
+    order = get_object_or_404(
+        Order.objects.select_related('user').prefetch_related(
+            'items__variant_size__variant__product',
+            'items__variant_size__variant__fabric',
+            'items__variant_size__variant__color',
+            'items__variant_size__variant__pattern',
+            'items__variant_size__size'
+        ),
+        id=order_id
+    )
+    
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'consume_materials':
+            try:
+                with transaction.atomic():
+                    consumed = ManufacturingService.consume_materials_for_order(order)
+                    
+                    # Update order status to processing if it's confirmed
+                    if order.status == 'confirmed':
+                        order.status = 'processing'
+                        order.save()
+                
+                messages.success(request, f'Materials consumed successfully for Order #{order.id}. Order status updated to Processing.')
+                logger.info(f"Consumed materials for order {order.id} by user {request.user.id}")
+                return redirect('manufacturing-orders-web')
+                
+            except Exception as e:
+                logger.error(f"Error consuming materials for order {order.id}: {str(e)}")
+                messages.error(request, f'Error consuming materials: {str(e)}')
+    
+    # Get material requirements
+    try:
+        material_data = ManufacturingService.get_order_material_requirements(order_id)
+        requirements = material_data['requirements']
+        is_feasible = material_data['is_feasible']
+        missing_materials = material_data['missing_materials']
+        total_materials_count = material_data['total_materials_count']
+        
+        # Add unit cost and total cost to requirements
+        total_material_cost = Decimal('0.00')
+        for req in requirements:
+            material = RawMaterial.objects.get(id=req['material_id'])
+            req['unit_cost'] = material.unit_price
+            req['total_cost'] = material.unit_price * req['required_quantity']
+            total_material_cost += req['total_cost']
+        
+    except Exception as e:
+        logger.error(f"Error loading material requirements for order {order_id}: {str(e)}")
+        messages.error(request, f'Error loading material requirements: {str(e)}')
+        requirements = []
+        is_feasible = False
+        missing_materials = []
+        total_materials_count = 0
+        total_material_cost = Decimal('0.00')
+    
+    # Calculate total quantity
+    total_quantity = sum(item.quantity for item in order.items.all())
+    
+    context = {
+        'order': order,
+        'requirements': requirements,
+        'is_feasible': is_feasible,
+        'missing_materials': missing_materials,
+        'total_materials_count': total_materials_count,
+        'total_quantity': total_quantity,
+        'total_material_cost': total_material_cost,
+    }
+    
+    return render(request, 'manufacturing/order_material_requirements.html', context)

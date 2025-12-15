@@ -29,9 +29,11 @@ class RawMaterialListCreateView(generics.ListCreateAPIView):
     """
     queryset = RawMaterial.objects.all().select_related('material_type').order_by('-created_at')
     permission_classes = (IsAdminOrOperator,)
-    filter_backends = (DjangoFilterBackend, filters.SearchFilter)
+    filter_backends = (DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
     filterset_fields = ('material_type',)
     search_fields = ('material_name',)
+    ordering_fields = ('material_name', 'current_quantity', 'unit_price', 'created_at', 'last_updated')
+    ordering = ('-created_at',)
     
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -141,8 +143,10 @@ class SupplierListCreateView(generics.ListCreateAPIView):
     """
     queryset = Supplier.objects.all().select_related('city').order_by('supplier_name')
     permission_classes = (IsAdminOrOperator,)
-    filter_backends = (filters.SearchFilter,)
+    filter_backends = (filters.SearchFilter, filters.OrderingFilter)
     search_fields = ('supplier_name', 'contact_person', 'email')
+    ordering_fields = ('supplier_name', 'contact_person', 'email')
+    ordering = ('supplier_name',)
     
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -184,8 +188,10 @@ class MaterialSupplierListCreateView(generics.ListCreateAPIView):
     ).order_by('-created_at')
     serializer_class = MaterialSupplierSerializer
     permission_classes = (IsAdminOrOperator,)
-    filter_backends = (DjangoFilterBackend,)
+    filter_backends = (DjangoFilterBackend, filters.OrderingFilter)
     filterset_fields = ('material', 'supplier', 'is_preferred')
+    ordering_fields = ('supplier_price', 'min_order_quantity', 'lead_time_days', 'created_at')
+    ordering = ('-created_at',)
     
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -304,14 +310,26 @@ class ManufacturingSpecificationListCreateView(generics.ListCreateAPIView):
     POST: Admin only
     
     Validates: Requirements 10.1
+    Optimized with comprehensive select_related for all foreign keys.
     """
     queryset = ManufacturingSpecification.objects.all().select_related(
-        'variant_size', 'variant_size__variant', 'variant_size__variant__product',
-        'variant_size__size', 'material', 'material__material_type'
+        'variant_size',
+        'variant_size__variant',
+        'variant_size__variant__product',
+        'variant_size__variant__fabric',
+        'variant_size__variant__color',
+        'variant_size__variant__pattern',
+        'variant_size__variant__sleeve',
+        'variant_size__variant__pocket',
+        'variant_size__size',
+        'material',
+        'material__material_type'
     ).order_by('-created_at')
     permission_classes = (IsAdminOrOperator,)
-    filter_backends = (DjangoFilterBackend,)
+    filter_backends = (DjangoFilterBackend, filters.OrderingFilter)
     filterset_fields = ('variant_size', 'material')
+    ordering_fields = ('quantity_required', 'created_at')
+    ordering = ('-created_at',)
     
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -333,10 +351,20 @@ class ManufacturingSpecificationDetailView(generics.RetrieveUpdateDestroyAPIView
     PUT/PATCH/DELETE: Admin only
     
     Validates: Requirements 10.1
+    Optimized with comprehensive select_related for all foreign keys.
     """
     queryset = ManufacturingSpecification.objects.all().select_related(
-        'variant_size', 'variant_size__variant', 'variant_size__variant__product',
-        'variant_size__size', 'material', 'material__material_type'
+        'variant_size',
+        'variant_size__variant',
+        'variant_size__variant__product',
+        'variant_size__variant__fabric',
+        'variant_size__variant__color',
+        'variant_size__variant__pattern',
+        'variant_size__variant__sleeve',
+        'variant_size__variant__pocket',
+        'variant_size__size',
+        'material',
+        'material__material_type'
     )
     permission_classes = (IsAdminOrOperator,)
     

@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block title %}Payment History - Vaitikan City{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Payment History</h2>
+        <a href="{% url 'order-list-web' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>Back to Orders
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="order_id" class="form-label">Order ID</label>
+                    <input type="number" class="form-control" id="order_id" name="order_id" value="{{ order_id }}"
+                        placeholder="Filter by order ID">
+                </div>
+                <div class="col-md-4">
+                    <label for="status" class="form-label">Payment Status</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">All Statuses</option>
+                        <option value="initiated" {% if status_filter=='initiated' %}selected{% endif %}>Initiated
+                        </option>
+                        <option value="pending" {% if status_filter=='pending' %}selected{% endif %}>Pending</option>
+                        <option value="success" {% if status_filter=='success' %}selected{% endif %}>Success</option>
+                        <option value="failed" {% if status_filter=='failed' %}selected{% endif %}>Failed</option>
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="bi bi-funnel me-2"></i>Filter
+                    </button>
+                    <a href="{% url 'payment-history-web' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle me-2"></i>Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Payments Table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Payment ID</th>
+                            <th>Order ID</th>
+                            <th>Amount</th>
+                            <th>Type</th>
+                            <th>Method</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payment in payments %}
+                        <tr>
+                            <td>#{{ payment.id }}</td>
+                            <td>
+                                <a href="{% url 'order-tracking-web' payment.order.id %}" class="text-decoration-none">
+                                    #{{ payment.order.id }}
+                                </a>
+                            </td>
+                            <td>₹{{ payment.amount }}</td>
+                            <td>
+                                <span class="badge 
+                                    {% if payment.payment_type == 'advance' %}bg-info
+                                    {% elif payment.payment_type == 'final' %}bg-primary
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ payment.payment_type_display }}
+                                </span>
+                            </td>
+                            <td>{{ payment.payment_method_display }}</td>
+                            <td>
+                                <span class="badge 
+                                    {% if payment.payment_status == 'success' %}bg-success
+                                    {% elif payment.payment_status == 'failed' %}bg-danger
+                                    {% elif payment.payment_status == 'pending' %}bg-warning
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ payment.payment_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if payment.paid_at %}
+                                {{ payment.paid_at|date:"M d, Y H:i" }}
+                                {% else %}
+                                {{ payment.created_at|date:"M d, Y H:i" }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if payment.payment_status == 'failed' %}
+                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                    onclick="retryPayment({{ payment.order.id }}, '{{ payment.payment_type }}')">
+                                    <i class="bi bi-arrow-clockwise me-1"></i>Retry
+                                </button>
+                                {% elif payment.payment_status == 'success' %}
+                                <a href="{% url 'order-tracking-web' payment.order.id %}"
+                                    class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-eye me-1"></i>View Order
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-4">
+                                <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+                                <p class="text-muted mt-2">No payments found</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="/static/js/payment.js"></script>
+<script>
+    function retryPayment(orderId, paymentType) {
+        initiatePayment(orderId, paymentType);
+    }
+</script>
+{% endblock %}

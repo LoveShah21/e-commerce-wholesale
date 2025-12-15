@@ -21,7 +21,7 @@ from apps.orders.models import Order
 from services.base import BaseService
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('services.payment_service')
 
 
 class PaymentService(BaseService):
@@ -164,6 +164,19 @@ class PaymentService(BaseService):
                 razorpay_order_id=razorpay_order['id']
             )
             cls.log_info(f"Created payment record {payment.id}")
+            
+            # Log payment transaction details
+            logger.info(
+                f"PAYMENT_CREATED | "
+                f"PaymentID: {payment.id} | "
+                f"OrderID: {order.id} | "
+                f"Type: {payment_type} | "
+                f"Amount: ₹{payment_amount} | "
+                f"Method: {payment_method} | "
+                f"RazorpayOrderID: {razorpay_order['id']} | "
+                f"Status: initiated"
+            )
+            
             return payment
         
         payment = cls.execute_in_transaction(_create_payment)
@@ -278,6 +291,18 @@ class PaymentService(BaseService):
             
             cls.log_info(f"Updated payment {payment_id} to success")
             
+            # Log successful payment transaction
+            logger.info(
+                f"PAYMENT_SUCCESS | "
+                f"PaymentID: {payment.id} | "
+                f"OrderID: {payment.order.id} | "
+                f"Type: {payment.payment_type} | "
+                f"Amount: ₹{payment.amount} | "
+                f"Method: {payment.payment_method} | "
+                f"RazorpayPaymentID: {razorpay_payment_id} | "
+                f"Status: success"
+            )
+            
             # Update order status based on payment type
             order = payment.order
             
@@ -334,6 +359,18 @@ class PaymentService(BaseService):
             payment.save()
             
             cls.log_info(f"Updated payment {payment_id} to failed")
+            
+            # Log failed payment transaction
+            logger.warning(
+                f"PAYMENT_FAILED | "
+                f"PaymentID: {payment.id} | "
+                f"OrderID: {payment.order.id} | "
+                f"Type: {payment.payment_type} | "
+                f"Amount: ₹{payment.amount} | "
+                f"Method: {payment.payment_method} | "
+                f"Reason: {failure_reason or 'Payment failed'} | "
+                f"Status: failed"
+            )
             
             return payment
         

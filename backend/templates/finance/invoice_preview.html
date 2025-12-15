@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+
+{% block title %}Invoice {{ invoice.invoice_number }} - Vaitikan City{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2><i class="bi bi-file-earmark-text me-2"></i>Invoice Preview</h2>
+                <p class="text-muted mb-0">Invoice Number: {{ invoice.invoice_number }}</p>
+            </div>
+            <div>
+                <a href="/api/invoices/{{ order.id }}/download/" class="btn btn-primary" target="_blank">
+                    <i class="bi bi-download me-2"></i>Download PDF
+                </a>
+                {% if request.user.is_staff %}
+                <a href="{% url 'admin-order-detail' order.id %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>Back to Order
+                </a>
+                {% else %}
+                <a href="/orders/tracking/{{ order.id }}/" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>Back to Order
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Invoice Card -->
+<div class="card shadow-sm">
+    <div class="card-body p-5">
+        <!-- Invoice Header -->
+        <div class="text-center mb-5">
+            <h1 class="display-4 mb-2">INVOICE</h1>
+            <p class="text-muted">Vaitikan Shirt Manufacturing & Wholesale</p>
+        </div>
+
+        <!-- Invoice Details -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h5 class="mb-3">Invoice Details</h5>
+                <table class="table table-borderless table-sm">
+                    <tr>
+                        <td class="fw-bold">Invoice Number:</td>
+                        <td>{{ invoice.invoice_number }}</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">Invoice Date:</td>
+                        <td>{{ invoice.invoice_date|date:"F d, Y H:i" }}</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">Order ID:</td>
+                        <td>#{{ order.id }}</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-bold">Order Date:</td>
+                        <td>{{ order.order_date|date:"F d, Y" }}</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h5 class="mb-3">Bill To</h5>
+                <address>
+                    <strong>{{ order.user.full_name }}</strong><br>
+                    {{ order.user.email }}<br>
+                    <br>
+                    {{ order.delivery_address.address_line1 }}<br>
+                    {% if order.delivery_address.address_line2 %}
+                    {{ order.delivery_address.address_line2 }}<br>
+                    {% endif %}
+                    {{ order.delivery_address.city.city_name }}, {{ order.delivery_address.state.state_name }}<br>
+                    {{ order.delivery_address.postal_code.postal_code }}<br>
+                    {{ order.delivery_address.country.country_name }}
+                </address>
+            </div>
+        </div>
+
+        <!-- Order Items -->
+        <div class="mb-4">
+            <h5 class="mb-3">Order Items</h5>
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Item</th>
+                            <th class="text-center">Quantity</th>
+                            <th class="text-end">Unit Price</th>
+                            <th class="text-end">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in order.items.all %}
+                        <tr>
+                            <td>
+                                <strong>{{ item.variant_size.variant.product.product_name }}</strong><br>
+                                <small class="text-muted">
+                                    {{ item.variant_size.variant.fabric.fabric_name }},
+                                    {{ item.variant_size.variant.color.color_name }},
+                                    {{ item.variant_size.variant.pattern.pattern_name }}
+                                    ({{ item.variant_size.size.size_code }})
+                                </small>
+                            </td>
+                            <td class="text-center">{{ item.quantity }}</td>
+                            <td class="text-end">₹{{ item.snapshot_unit_price|floatformat:2 }}</td>
+                            <td class="text-end">₹{{
+                                item.snapshot_unit_price|floatformat:2|add:0|mul:item.quantity|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3" class="text-end fw-bold">Subtotal:</td>
+                            <td class="text-end">₹{{ totals.subtotal|floatformat:2 }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="3" class="text-end fw-bold">Tax ({{ totals.tax_percentage }}%):</td>
+                            <td class="text-end">₹{{ totals.tax_amount|floatformat:2 }}</td>
+                        </tr>
+                        <tr class="table-primary">
+                            <td colspan="3" class="text-end fw-bold fs-5">Total Amount:</td>
+                            <td class="text-end fw-bold fs-5">₹{{ totals.total_amount|floatformat:2 }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <!-- Payment Information -->
+        {% if payments %}
+        <div class="mb-4">
+            <h5 class="mb-3">Payment Information</h5>
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Payment Type</th>
+                            <th class="text-end">Amount</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payment in payments %}
+                        <tr>
+                            <td>{{ payment.get_payment_type_display }}</td>
+                            <td class="text-end">₹{{ payment.amount|floatformat:2 }}</td>
+                            <td>{{ payment.paid_at|date:"F d, Y" }}</td>
+                            <td>
+                                <span class="badge bg-success">
+                                    {{ payment.get_payment_status_display }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Footer -->
+        <div class="text-center mt-5 pt-4 border-top">
+            <p class="text-muted mb-1">Thank you for your business!</p>
+            <p class="text-muted small">This is a computer-generated invoice and does not require a signature.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Print Styles -->
+<style>
+    @media print {
+
+        .btn,
+        nav,
+        .breadcrumb {
+            display: none !important;
+        }
+
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        body {
+            background: white !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Add print functionality
+    document.addEventListener('DOMContentLoaded', function () {
+        // You can add a print button if needed
+        const printBtn = document.createElement('button');
+        printBtn.className = 'btn btn-outline-secondary';
+        printBtn.innerHTML = '<i class="bi bi-printer me-2"></i>Print';
+        printBtn.onclick = function () {
+            window.print();
+        };
+
+        // Optionally add the print button to the header
+        // document.querySelector('.d-flex.justify-content-between').appendChild(printBtn);
+    });
+</script>
+{% endblock %}

@@ -1,4 +1,5 @@
 {% load static %}
+{% load role_tags %}
 
 <aside class="sidebar bg-light border-end" style="width: 250px; min-height: calc(100vh - 56px);">
     <div class="d-flex flex-column h-100">
@@ -12,7 +13,7 @@
                     </a>
                 </li>
 
-                {% if user.user_type == 'customer' %}
+                {% if user|is_customer %}
                 <!-- Customer Navigation -->
                 <li class="nav-item mb-1">
                     <a class="nav-link text-dark d-flex align-items-center" href="/products/">
@@ -33,6 +34,12 @@
                     </a>
                 </li>
                 <li class="nav-item mb-1">
+                    <a class="nav-link text-dark d-flex align-items-center" href="{% url 'payment-history-web' %}">
+                        <i class="bi bi-credit-card me-2"></i>
+                        Payment History
+                    </a>
+                </li>
+                <li class="nav-item mb-1">
                     <a class="nav-link text-dark d-flex align-items-center" href="{% url 'inquiry-web' %}">
                         <i class="bi bi-envelope me-2"></i>
                         Submit Inquiry
@@ -46,7 +53,7 @@
                 </li>
                 {% endif %}
 
-                {% if user.user_type == 'admin' %}
+                {% if user|is_admin %}
                 <!-- Admin Navigation -->
                 <li class="nav-item mb-1">
                     <a class="nav-link text-dark d-flex align-items-center" href="{% url 'admin-product-list' %}">
@@ -58,6 +65,19 @@
                     <a class="nav-link text-dark d-flex align-items-center" href="/admin/orders/">
                         <i class="bi bi-receipt me-2"></i>
                         Orders
+                    </a>
+                </li>
+                <li class="nav-item mb-1">
+                    <a class="nav-link text-dark d-flex align-items-center" href="{% url 'manufacturing-orders-web' %}">
+                        <i class="bi bi-box-seam me-2"></i>
+                        Manufacturing
+                    </a>
+                </li>
+                <li class="nav-item mb-1">
+                    <a class="nav-link text-dark d-flex align-items-center"
+                        href="{% url 'manufacturing-spec-list-web' %}">
+                        <i class="bi bi-gear-fill me-2"></i>
+                        Specifications
                     </a>
                 </li>
                 <li class="nav-item mb-1">
@@ -98,12 +118,19 @@
                 </li>
                 {% endif %}
 
-                {% if user.user_type == 'operator' %}
+                {% if user|is_operator %}
                 <!-- Operator Navigation -->
                 <li class="nav-item mb-1">
-                    <a class="nav-link text-dark d-flex align-items-center" href="/manufacturing/">
-                        <i class="bi bi-gear me-2"></i>
-                        Manufacturing
+                    <a class="nav-link text-dark d-flex align-items-center" href="{% url 'manufacturing-orders-web' %}">
+                        <i class="bi bi-box-seam me-2"></i>
+                        Manufacturing Orders
+                    </a>
+                </li>
+                <li class="nav-item mb-1">
+                    <a class="nav-link text-dark d-flex align-items-center"
+                        href="{% url 'manufacturing-spec-list-web' %}">
+                        <i class="bi bi-gear-fill me-2"></i>
+                        Specifications
                     </a>
                 </li>
                 <li class="nav-item mb-1">

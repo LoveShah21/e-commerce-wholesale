@@ -10,7 +10,7 @@ from django.db import transaction
 from typing import Callable, Any
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('services.base')
 
 
 class BaseService:

@@ -11,7 +11,7 @@ from typing import Optional
 from datetime import datetime
 
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('services.utils')
 
 
 def generate_sku(prefix: str = "SKU") -> str:

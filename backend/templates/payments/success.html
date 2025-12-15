@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block title %}Payment Successful - Vaitikan City{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-body text-center py-5">
+                    <!-- Success Icon -->
+                    <div class="mb-4">
+                        <i class="bi bi-check-circle-fill text-success" style="font-size: 5rem;"></i>
+                    </div>
+
+                    <!-- Success Message -->
+                    <h2 class="mb-3">Payment Successful!</h2>
+                    <p class="text-muted mb-4">
+                        Your payment has been processed successfully.
+                    </p>
+
+                    {% if payment %}
+                    <!-- Payment Details -->
+                    <div class="card bg-light mb-4">
+                        <div class="card-body">
+                            <div class="row mb-2">
+                                <div class="col-6 text-start">
+                                    <strong>Payment ID:</strong>
+                                </div>
+                                <div class="col-6 text-end">
+                                    #{{ payment.id }}
+                                </div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-6 text-start">
+                                    <strong>Amount Paid:</strong>
+                                </div>
+                                <div class="col-6 text-end">
+                                    ₹{{ payment.amount }}
+                                </div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-6 text-start">
+                                    <strong>Payment Type:</strong>
+                                </div>
+                                <div class="col-6 text-end">
+                                    <span class="badge bg-info">{{ payment.payment_type_display }}</span>
+                                </div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-6 text-start">
+                                    <strong>Payment Method:</strong>
+                                </div>
+                                <div class="col-6 text-end">
+                                    {{ payment.payment_method_display }}
+                                </div>
+                            </div>
+                            {% if payment.paid_at %}
+                            <div class="row">
+                                <div class="col-6 text-start">
+                                    <strong>Paid At:</strong>
+                                </div>
+                                <div class="col-6 text-end">
+                                    {{ payment.paid_at|date:"F d, Y H:i" }}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if order %}
+                    <!-- Order Details -->
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Order #{{ order.id }} - Status: <strong>{{ order.get_status_display }}</strong>
+                    </div>
+                    {% endif %}
+
+                    <!-- Action Buttons -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                        {% if order %}
+                        <a href="{% url 'order-tracking-web' order.id %}" class="btn btn-primary">
+                            <i class="bi bi-box-seam me-2"></i>View Order
+                        </a>
+                        {% endif %}
+                        <a href="{% url 'order-list-web' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-list-ul me-2"></i>My Orders
+                        </a>
+                        <a href="{% url 'product-list-web' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-shop me-2"></i>Continue Shopping
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

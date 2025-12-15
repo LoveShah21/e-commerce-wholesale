@@ -1,0 +1,243 @@
+[
+  {
+    "model": "finance.taxconfiguration",
+    "pk": 1,
+    "fields": {
+      "tax_name": "GST",
+      "tax_percentage": "18.00",
+      "effective_from": "2024-01-01",
+      "effective_to": null,
+      "is_active": true,
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "orders.cart",
+    "pk": 1,
+    "fields": {
+      "user": 3,
+      "status": "checked_out",
+      "guest_email": null,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "orders.cart",
+    "pk": 2,
+    "fields": {
+      "user": 4,
+      "status": "active",
+      "guest_email": null,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "orders.cartitem",
+    "pk": 1,
+    "fields": {
+      "cart": 2,
+      "variant_size": 4,
+      "quantity": 2,
+      "added_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "orders.cartitem",
+    "pk": 2,
+    "fields": {
+      "cart": 2,
+      "variant_size": 12,
+      "quantity": 1,
+      "added_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "orders.order",
+    "pk": 1,
+    "fields": {
+      "user": 3,
+      "delivery_address": 1,
+      "status": "confirmed",
+      "notes": "Please deliver between 10 AM to 6 PM",
+      "updated_at": "2024-01-01T00:00:00Z",
+      "order_date": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "orders.order",
+    "pk": 2,
+    "fields": {
+      "user": 5,
+      "delivery_address": 3,
+      "status": "processing",
+      "notes": null,
+      "updated_at": "2024-01-01T00:00:00Z",
+      "order_date": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "orders.order",
+    "pk": 3,
+    "fields": {
+      "user": 4,
+      "delivery_address": 2,
+      "status": "delivered",
+      "notes": null,
+      "updated_at": "2024-01-01T00:00:00Z",
+      "order_date": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "orders.orderitem",
+    "pk": 1,
+    "fields": {
+      "order": 1,
+      "variant_size": 1,
+      "quantity": 2,
+      "snapshot_unit_price": "899.00",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "orders.orderitem",
+    "pk": 2,
+    "fields": {
+      "order": 1,
+      "variant_size": 5,
+      "quantity": 1,
+      "snapshot_unit_price": "943.95",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "orders.orderitem",
+    "pk": 3,
+    "fields": {
+      "order": 2,
+      "variant_size": 11,
+      "quantity": 3,
+      "snapshot_unit_price": "699.00",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "orders.orderitem",
+    "pk": 4,
+    "fields": {
+      "order": 2,
+      "variant_size": 14,
+      "quantity": 2,
+      "snapshot_unit_price": "749.00",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "orders.orderitem",
+    "pk": 5,
+    "fields": {
+      "order": 3,
+      "variant_size": 16,
+      "quantity": 1,
+      "snapshot_unit_price": "1499.00",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "finance.payment",
+    "pk": 1,
+    "fields": {
+      "order": 1,
+      "amount": "1370.98",
+      "payment_type": "advance",
+      "payment_method": "upi",
+      "payment_status": "success",
+      "razorpay_order_id": "order_test_123456",
+      "razorpay_payment_id": "pay_test_123456",
+      "razorpay_signature": "signature_test_123456",
+      "failure_reason": null,
+      "paid_at": "2024-12-10T10:30:00Z",
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "finance.payment",
+    "pk": 2,
+    "fields": {
+      "order": 2,
+      "amount": "1598.50",
+      "payment_type": "advance",
+      "payment_method": "card",
+      "payment_status": "success",
+      "razorpay_order_id": "order_test_234567",
+      "razorpay_payment_id": "pay_test_234567",
+      "razorpay_signature": "signature_test_234567",
+      "failure_reason": null,
+      "paid_at": "2024-12-11T14:20:00Z",
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "finance.payment",
+    "pk": 3,
+    "fields": {
+      "order": 3,
+      "amount": "884.91",
+      "payment_type": "advance",
+      "payment_method": "upi",
+      "payment_status": "success",
+      "razorpay_order_id": "order_test_345678",
+      "razorpay_payment_id": "pay_test_345678",
+      "razorpay_signature": "signature_test_345678",
+      "failure_reason": null,
+      "paid_at": "2024-12-05T09:15:00Z",
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "finance.payment",
+    "pk": 4,
+    "fields": {
+      "order": 3,
+      "amount": "884.91",
+      "payment_type": "final",
+      "payment_method": "upi",
+      "payment_status": "success",
+      "razorpay_order_id": "order_test_456789",
+      "razorpay_payment_id": "pay_test_456789",
+      "razorpay_signature": "signature_test_456789",
+      "failure_reason": null,
+      "paid_at": "2024-12-12T16:45:00Z",
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "finance.invoice",
+    "pk": 1,
+    "fields": {
+      "order": 1,
+      "invoice_number": "INV-2024-001",
+      "total_amount": "2741.95",
+      "invoice_url": "/media/invoices/INV-2024-001.pdf",
+      "created_at": "2024-01-01T00:00:00Z",
+      "invoice_date": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "finance.invoice",
+    "pk": 2,
+    "fields": {
+      "order": 3,
+      "invoice_number": "INV-2024-002",
+      "total_amount": "1769.82",
+      "invoice_url": "/media/invoices/INV-2024-002.pdf",
+      "created_at": "2024-01-01T00:00:00Z",
+      "invoice_date": "2024-01-01T00:00:00Z"
+    }
+  }
+]

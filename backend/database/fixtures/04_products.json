@@ -1,0 +1,200 @@
+[
+  {
+    "model": "products.product",
+    "pk": 1,
+    "fields": {
+      "product_name": "Classic Formal Shirt",
+      "description": "Premium quality formal shirt perfect for office and business meetings",
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.product",
+    "pk": 2,
+    "fields": {
+      "product_name": "Casual Cotton Shirt",
+      "description": "Comfortable casual shirt for everyday wear",
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.product",
+    "pk": 3,
+    "fields": {
+      "product_name": "Designer Party Shirt",
+      "description": "Stylish party wear shirt with modern design",
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.productimage",
+    "pk": 1,
+    "fields": {
+      "product": 1,
+      "image_url": "/static/images/products/formal-shirt-1.jpg",
+      "alt_text": "Classic Formal Shirt - White",
+      "is_primary": true,
+      "display_order": 1,
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.productimage",
+    "pk": 2,
+    "fields": {
+      "product": 1,
+      "image_url": "/static/images/products/formal-shirt-2.jpg",
+      "alt_text": "Classic Formal Shirt - Blue",
+      "is_primary": false,
+      "display_order": 2,
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.productimage",
+    "pk": 3,
+    "fields": {
+      "product": 2,
+      "image_url": "/static/images/products/casual-shirt-1.jpg",
+      "alt_text": "Casual Cotton Shirt",
+      "is_primary": true,
+      "display_order": 1,
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.productimage",
+    "pk": 4,
+    "fields": {
+      "product": 3,
+      "image_url": "/static/images/products/party-shirt-1.jpg",
+      "alt_text": "Designer Party Shirt",
+      "is_primary": true,
+      "display_order": 1,
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.productvariant",
+    "pk": 1,
+    "fields": {
+      "product": 1,
+      "fabric": 1,
+      "color": 1,
+      "pattern": 1,
+      "sleeve": 1,
+      "pocket": 2,
+      "base_price": "899.00",
+      "sku": "VAIT-FORM-COT-WHT-SOL-FS-SP",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.productvariant",
+    "pk": 2,
+    "fields": {
+      "product": 1,
+      "fabric": 1,
+      "color": 2,
+      "pattern": 1,
+      "sleeve": 1,
+      "pocket": 2,
+      "base_price": "899.00",
+      "sku": "VAIT-FORM-COT-BLU-SOL-FS-SP",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.productvariant",
+    "pk": 3,
+    "fields": {
+      "product": 1,
+      "fabric": 1,
+      "color": 3,
+      "pattern": 1,
+      "sleeve": 1,
+      "pocket": 2,
+      "base_price": "899.00",
+      "sku": "VAIT-FORM-COT-BLK-SOL-FS-SP",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.productvariant",
+    "pk": 4,
+    "fields": {
+      "product": 1,
+      "fabric": 1,
+      "color": 1,
+      "pattern": 2,
+      "sleeve": 1,
+      "pocket": 2,
+      "base_price": "949.00",
+      "sku": "VAIT-FORM-COT-WHT-STR-FS-SP",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.productvariant",
+    "pk": 5,
+    "fields": {
+      "product": 2,
+      "fabric": 1,
+      "color": 2,
+      "pattern": 3,
+      "sleeve": 2,
+      "pocket": 1,
+      "base_price": "699.00",
+      "sku": "VAIT-CASU-COT-BLU-CHK-HS-NP",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.productvariant",
+    "pk": 6,
+    "fields": {
+      "product": 2,
+      "fabric": 5,
+      "color": 5,
+      "pattern": 1,
+      "sleeve": 2,
+      "pocket": 2,
+      "base_price": "749.00",
+      "sku": "VAIT-CASU-CBL-GRY-SOL-HS-SP",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.productvariant",
+    "pk": 7,
+    "fields": {
+      "product": 3,
+      "fabric": 3,
+      "color": 3,
+      "pattern": 4,
+      "sleeve": 1,
+      "pocket": 1,
+      "base_price": "1499.00",
+      "sku": "VAIT-PART-SIL-BLK-PRT-FS-NP",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.productvariant",
+    "pk": 8,
+    "fields": {
+      "product": 3,
+      "fabric": 3,
+      "color": 6,
+      "pattern": 4,
+      "sleeve": 1,
+      "pocket": 1,
+      "base_price": "1499.00",
+      "sku": "VAIT-PART-SIL-NAV-PRT-FS-NP",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  }
+]

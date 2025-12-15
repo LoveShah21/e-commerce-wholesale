@@ -1,0 +1,175 @@
+[
+  {
+    "model": "users.country",
+    "pk": 1,
+    "fields": {
+      "country_code": "IN",
+      "country_name": "India",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "users.state",
+    "pk": 1,
+    "fields": {
+      "country": 1,
+      "state_code": "MH",
+      "state_name": "Maharashtra",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "users.state",
+    "pk": 2,
+    "fields": {
+      "country": 1,
+      "state_code": "GJ",
+      "state_name": "Gujarat",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "users.state",
+    "pk": 3,
+    "fields": {
+      "country": 1,
+      "state_code": "KA",
+      "state_name": "Karnataka",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "users.state",
+    "pk": 4,
+    "fields": {
+      "country": 1,
+      "state_code": "DL",
+      "state_name": "Delhi",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "users.city",
+    "pk": 1,
+    "fields": {
+      "state": 1,
+      "city_name": "Mumbai",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "users.city",
+    "pk": 2,
+    "fields": {
+      "state": 1,
+      "city_name": "Pune",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "users.city",
+    "pk": 3,
+    "fields": {
+      "state": 2,
+      "city_name": "Ahmedabad",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "users.city",
+    "pk": 4,
+    "fields": {
+      "state": 2,
+      "city_name": "Surat",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "users.city",
+    "pk": 5,
+    "fields": {
+      "state": 3,
+      "city_name": "Bangalore",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "users.city",
+    "pk": 6,
+    "fields": {
+      "state": 4,
+      "city_name": "New Delhi",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "users.postalcode",
+    "pk": 1,
+    "fields": {
+      "city": 1,
+      "postal_code": "400001",
+      "area_name": "Fort",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "users.postalcode",
+    "pk": 2,
+    "fields": {
+      "city": 1,
+      "postal_code": "400050",
+      "area_name": "Bandra",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "users.postalcode",
+    "pk": 3,
+    "fields": {
+      "city": 2,
+      "postal_code": "411001",
+      "area_name": "Shivajinagar",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "users.postalcode",
+    "pk": 4,
+    "fields": {
+      "city": 3,
+      "postal_code": "380001",
+      "area_name": "Lal Darwaja",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "users.postalcode",
+    "pk": 5,
+    "fields": {
+      "city": 4,
+      "postal_code": "395001",
+      "area_name": "Athwa",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "users.postalcode",
+    "pk": 6,
+    "fields": {
+      "city": 5,
+      "postal_code": "560001",
+      "area_name": "Bangalore GPO",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "users.postalcode",
+    "pk": 7,
+    "fields": {
+      "city": 6,
+      "postal_code": "110001",
+      "area_name": "Connaught Place",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  }
+]

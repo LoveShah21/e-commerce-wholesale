@@ -96,6 +96,8 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="/static/js/payment.js"></script>
 <script>
     const orderId = window.location.pathname.split('/').filter(Boolean).pop();
 
@@ -263,46 +265,95 @@
 
     function renderPaymentInfo(order) {
         const container = document.getElementById('paymentContainer');
-        const totalAmount = parseFloat(order.total_amount);
-        const advanceAmount = totalAmount * 0.5;
-        const finalAmount = totalAmount * 0.5;
 
-        // This is simplified - in reality, you'd fetch payment records from the API
-        container.innerHTML = `
-        <div class="mb-3">
-            <div class="d-flex justify-content-between mb-2">
-                <span>Total Amount:</span>
-                <strong>₹${totalAmount.toFixed(2)}</strong>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-                <span>Advance Payment (50%):</span>
-                <span class="text-success">₹${advanceAmount.toFixed(2)}</span>
-            </div>
-            <div class="d-flex justify-content-between">
-                <span>Final Payment (50%):</span>
-                <span class="${order.status === 'delivered' ? 'text-success' : 'text-muted'}">
-                    ₹${finalAmount.toFixed(2)}
-                </span>
-            </div>
-        </div>
-        ${order.status === 'pending' ? `
-            <div class="alert alert-warning" role="alert">
-                <small><i class="bi bi-info-circle me-1"></i>Advance payment pending</small>
-            </div>
-        ` : ''}
-        ${order.status === 'dispatched' ? `
-            <div class="alert alert-info" role="alert">
-                <small><i class="bi bi-info-circle me-1"></i>Final payment required before delivery</small>
-            </div>
-            <button class="btn btn-primary w-100" onclick="payFinalAmount()">
-                <i class="bi bi-credit-card me-2"></i>Pay Final Amount
-            </button>
-        ` : ''}
-    `;
-    }
+        // Fetch payment status
+        fetch(`/api/payments/status/${orderId}/`, {
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+            .then(response => response.json())
+            .then(paymentStatus => {
+                const totalAmount = parseFloat(paymentStatus.total_due);
+                const totalPaid = parseFloat(paymentStatus.total_paid);
+                const balanceDue = totalAmount - totalPaid;
 
-    function payFinalAmount() {
-        VaitikanApp.showToast('Payment integration coming soon', 'info');
+                let html = `
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Total Amount:</span>
+                        <strong>₹${totalAmount.toFixed(2)}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Amount Paid:</span>
+                        <span class="text-success">₹${totalPaid.toFixed(2)}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Balance Due:</span>
+                        <span class="${balanceDue > 0 ? 'text-danger' : 'text-success'}">
+                            ₹${balanceDue.toFixed(2)}
+                        </span>
+                    </div>
+                </div>
+            `;
+
+                // Show payment buttons based on status
+                if (!paymentStatus.advance_paid) {
+                    html += `
+                    <div class="alert alert-warning" role="alert">
+                        <small><i class="bi bi-info-circle me-1"></i>Advance payment (50%) required to confirm order</small>
+                    </div>
+                    <button class="btn btn-primary w-100 mb-2" onclick="initiatePayment(${orderId}, 'advance')">
+                        <i class="bi bi-credit-card me-2"></i>Pay Advance (50%)
+                    </button>
+                `;
+                } else if (!paymentStatus.final_paid && order.status === 'dispatched') {
+                    html += `
+                    <div class="alert alert-info" role="alert">
+                        <small><i class="bi bi-info-circle me-1"></i>Final payment (50%) required before delivery</small>
+                    </div>
+                    <button class="btn btn-success w-100 mb-2" onclick="initiatePayment(${orderId}, 'final')">
+                        <i class="bi bi-credit-card me-2"></i>Pay Final Amount (50%)
+                    </button>
+                `;
+                } else if (paymentStatus.fully_paid) {
+                    html += `
+                    <div class="alert alert-success" role="alert">
+                        <small><i class="bi bi-check-circle me-1"></i>All payments completed</small>
+                    </div>
+                `;
+                }
+
+                html += `
+                <a href="/payments/history/?order_id=${orderId}" class="btn btn-outline-secondary w-100 mb-2">
+                    <i class="bi bi-clock-history me-2"></i>Payment History
+                </a>
+            `;
+
+                // Add invoice buttons if advance payment is made
+                if (paymentStatus.advance_paid) {
+                    html += `
+                    <hr class="my-3">
+                    <h6 class="mb-2"><i class="bi bi-file-earmark-text me-1"></i>Invoice</h6>
+                    <a href="/invoices/${orderId}/preview/" class="btn btn-outline-primary w-100 mb-2" target="_blank">
+                        <i class="bi bi-eye me-2"></i>Preview Invoice
+                    </a>
+                    <a href="/api/invoices/${orderId}/download/" class="btn btn-primary w-100" target="_blank">
+                        <i class="bi bi-download me-2"></i>Download PDF
+                    </a>
+                `;
+                }
+
+                container.innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error loading payment status:', error);
+                container.innerHTML = `
+                <div class="alert alert-danger" role="alert">
+                    <small>Failed to load payment information</small>
+                </div>
+            `;
+            });
     }
 
     function getCookie(name) {

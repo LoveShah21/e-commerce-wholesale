@@ -352,8 +352,9 @@
             .then(data => {
                 VaitikanApp.hideLoading();
                 VaitikanApp.showToast('Order placed successfully!', 'success');
+                // Redirect to payment page
                 setTimeout(() => {
-                    window.location.href = `/order-tracking/${data.id}/`;
+                    window.location.href = `/payments/order/${data.id}/`;
                 }, 1500);
             })
             .catch(error => {
