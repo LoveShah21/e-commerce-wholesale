@@ -20,11 +20,15 @@ from apps.support.admin_views import (
     AdminComplaintListView, AdminComplaintDetailView, AdminComplaintResolveView,
     AdminFeedbackListView
 )
+from apps.users.admin_views import (
+    AdminUserListView, AdminUserDetailView, AdminUserCreateView, 
+    AdminUserEditView, AdminUserDeleteView, AdminUserStatusToggleView
+)
 from apps.orders.admin_views import (
     AdminOrderListView, AdminOrderDetailView, AdminOrderMaterialRequirementsView
 )
 from apps.manufacturing.web_views import (
-    inventory_overview, material_list, material_create, material_edit, material_update_quantity, material_delete,
+    inventory_overview, material_list, material_create, material_edit, material_update_quantity, material_update_reorder_level, material_delete,
     supplier_list, supplier_create, supplier_edit, supplier_delete,
     material_supplier_list, material_supplier_create, material_supplier_edit, material_supplier_delete,
     material_type_create,
@@ -34,6 +38,10 @@ from apps.manufacturing.web_views import (
 from apps.finance.web_views import (
     PaymentSuccessView, PaymentFailureView, PaymentHistoryView, OrderPaymentView,
     InvoicePreviewView
+)
+from apps.reports.admin_views import (
+    AdminReportsListView, AdminSalesReportView, 
+    AdminOrderReportView, AdminFinancialReportView
 )
 from django.views.generic import TemplateView
 
@@ -64,6 +72,22 @@ urlpatterns = [
     path('admin/orders/', AdminOrderListView.as_view(), name='admin-order-list'),
     path('admin/orders/<int:order_id>/', AdminOrderDetailView.as_view(), name='admin-order-detail'),
     path('admin/orders/<int:order_id>/materials/', AdminOrderMaterialRequirementsView.as_view(), name='admin-order-materials'),
+    
+    # Admin User Management Routes (must be before admin.site.urls)
+    path('admin/users/', AdminUserListView.as_view(), name='admin-user-list'),
+    path('admin/users/create/', AdminUserCreateView.as_view(), name='admin-user-create'),
+    path('admin/users/<int:user_id>/', AdminUserDetailView.as_view(), name='admin-user-detail'),
+    path('admin/users/<int:user_id>/edit/', AdminUserEditView.as_view(), name='admin-user-edit'),
+    path('admin/users/<int:user_id>/delete/', AdminUserDeleteView.as_view(), name='admin-user-delete'),
+    path('admin/users/<int:user_id>/toggle-status/', AdminUserStatusToggleView.as_view(), name='admin-user-status-toggle'),
+    
+    # Admin Reports Routes (must be before admin.site.urls)
+    path('admin/reports/', AdminReportsListView.as_view(), name='admin-reports-list'),
+    path('admin/reports/sales/', AdminSalesReportView.as_view(), name='admin-sales-report'),
+    path('admin/reports/orders/', AdminOrderReportView.as_view(), name='admin-order-report'),
+    path('admin/reports/financial/', AdminFinancialReportView.as_view(), name='admin-financial-report'),
+    
+
     
     # Django Admin (must come after custom admin/* routes)
     path('admin/', admin.site.urls),
@@ -99,6 +123,7 @@ urlpatterns = [
     path('inventory/materials/create/', material_create, name='material-create-web'),
     path('inventory/materials/<int:material_id>/edit/', material_edit, name='material-edit-web'),
     path('inventory/materials/<int:material_id>/quantity/', material_update_quantity, name='material-quantity-update-web'),
+    path('inventory/materials/<int:material_id>/reorder-level/', material_update_reorder_level, name='material-reorder-level-update-web'),
     path('inventory/materials/<int:material_id>/delete/', material_delete, name='material-delete-web'),
     path('inventory/suppliers/', supplier_list, name='supplier-list-web'),
     path('inventory/suppliers/create/', supplier_create, name='supplier-create-web'),

@@ -34,7 +34,7 @@ def inventory_overview(request):
     # Get recent materials
     recent_materials_qs = RawMaterial.objects.select_related('material_type').order_by('-last_updated')[:10]
     
-    # Fetch material data from API to get is_below_reorder status
+    # Fetch material data with proper stock status
     recent_materials = []
     for material in recent_materials_qs:
         material_data = {
@@ -48,15 +48,25 @@ def inventory_overview(request):
             'is_below_reorder': False
         }
         
-        # Check if below reorder level
-        material_suppliers = MaterialSupplier.objects.filter(
-            material=material,
-            reorder_level__isnull=False
-        )
-        for ms in material_suppliers:
-            if material.current_quantity < ms.reorder_level:
+        # Check stock status
+        # 1. If quantity is 0 or negative, it's out of stock
+        if material.current_quantity <= 0:
+            material_data['is_below_reorder'] = True
+        else:
+            # 2. Check if below reorder level (only if quantity > 0)
+            # First check default reorder level on the material itself
+            if material.default_reorder_level and material.current_quantity < material.default_reorder_level:
                 material_data['is_below_reorder'] = True
-                break
+            else:
+                # Then check supplier-specific reorder levels
+                material_suppliers = MaterialSupplier.objects.filter(
+                    material=material,
+                    reorder_level__isnull=False
+                )
+                for ms in material_suppliers:
+                    if material.current_quantity < ms.reorder_level:
+                        material_data['is_below_reorder'] = True
+                        break
         
         recent_materials.append(material_data)
     
@@ -103,19 +113,25 @@ def material_list(request):
             'unit_of_measurement': material.material_type.unit_of_measurement,
             'unit_price': material.unit_price,
             'current_quantity': material.current_quantity,
+            'default_reorder_level': material.default_reorder_level,
             'last_updated': material.last_updated,
             'is_below_reorder': False,
             'reorder_info': None
         }
         
-        # Check if below reorder level
-        material_suppliers = MaterialSupplier.objects.filter(
-            material=material,
-            reorder_level__isnull=False
-        ).select_related('supplier')
-        
-        for ms in material_suppliers:
-            if material.current_quantity < ms.reorder_level:
+        # Check stock status
+        # 1. If quantity is 0, it's out of stock regardless of reorder level
+        if material.current_quantity <= 0:
+            material_data['is_below_reorder'] = True
+            material_data['reorder_info'] = {
+                'reorder_level': 0,
+                'shortage': abs(material.current_quantity),
+                'preferred_supplier': None
+            }
+        else:
+            # 2. Check if below reorder level (only if quantity > 0)
+            # First check default reorder level on the material itself
+            if material.default_reorder_level and material.current_quantity < material.default_reorder_level:
                 material_data['is_below_reorder'] = True
                 
                 # Get preferred supplier
@@ -125,8 +141,8 @@ def material_list(request):
                 ).select_related('supplier').first()
                 
                 material_data['reorder_info'] = {
-                    'reorder_level': ms.reorder_level,
-                    'shortage': ms.reorder_level - material.current_quantity,
+                    'reorder_level': material.default_reorder_level,
+                    'shortage': material.default_reorder_level - material.current_quantity,
                     'preferred_supplier': {
                         'id': preferred.supplier.id,
                         'name': preferred.supplier.supplier_name,
@@ -135,7 +151,35 @@ def material_list(request):
                         'lead_time_days': preferred.lead_time_days
                     } if preferred else None
                 }
-                break
+            else:
+                # Then check supplier-specific reorder levels
+                material_suppliers = MaterialSupplier.objects.filter(
+                    material=material,
+                    reorder_level__isnull=False
+                ).select_related('supplier')
+                
+                for ms in material_suppliers:
+                    if material.current_quantity < ms.reorder_level:
+                        material_data['is_below_reorder'] = True
+                        
+                        # Get preferred supplier
+                        preferred = MaterialSupplier.objects.filter(
+                            material=material,
+                            is_preferred=True
+                        ).select_related('supplier').first()
+                        
+                        material_data['reorder_info'] = {
+                            'reorder_level': ms.reorder_level,
+                            'shortage': ms.reorder_level - material.current_quantity,
+                            'preferred_supplier': {
+                                'id': preferred.supplier.id,
+                                'name': preferred.supplier.supplier_name,
+                                'price': preferred.supplier_price,
+                                'min_order_qty': preferred.min_order_quantity,
+                                'lead_time_days': preferred.lead_time_days
+                            } if preferred else None
+                        }
+                        break
         
         materials.append(material_data)
     
@@ -170,6 +214,7 @@ def material_create(request):
             material_type_id = request.POST.get('material_type')
             unit_price = request.POST.get('unit_price')
             current_quantity = request.POST.get('current_quantity')
+            default_reorder_level = request.POST.get('default_reorder_level')
             
             # Validate required fields
             if not all([material_name, material_type_id, unit_price, current_quantity]):
@@ -185,8 +230,12 @@ def material_create(request):
                     material_name=material_name,
                     material_type_id=material_type_id,
                     unit_price=unit_price,
-                    current_quantity=current_quantity
+                    current_quantity=current_quantity,
+                    default_reorder_level=default_reorder_level if default_reorder_level else None
                 )
+                
+                # Note: No need to sync supplier reorder levels for new materials
+                # as they don't have supplier associations yet
             
             messages.success(request, f'Material "{material.material_name}" created successfully.')
             logger.info(f"Created material: {material.material_name} by user {request.user.id}")
@@ -222,11 +271,32 @@ def material_edit(request, material_id):
             material.material_type_id = request.POST.get('material_type')
             material.unit_price = request.POST.get('unit_price')
             material.current_quantity = request.POST.get('current_quantity')
+            default_reorder_level = request.POST.get('default_reorder_level')
+            
+            # Check if reorder level is changing
+            old_reorder_level = material.default_reorder_level
+            new_reorder_level = default_reorder_level if default_reorder_level else None
+            reorder_level_changed = old_reorder_level != new_reorder_level
+            
+            material.default_reorder_level = new_reorder_level
             
             with transaction.atomic():
                 material.save()
+                
+                # Sync reorder level to all associated suppliers if it changed
+                if reorder_level_changed:
+                    MaterialSupplier.objects.filter(material=material).update(
+                        reorder_level=new_reorder_level
+                    )
+                    logger.info(f"Synced reorder level ({new_reorder_level}) to all suppliers for material: {material.material_name}")
             
-            messages.success(request, f'Material "{material.material_name}" updated successfully.')
+            success_message = f'Material "{material.material_name}" updated successfully.'
+            if reorder_level_changed:
+                supplier_count = MaterialSupplier.objects.filter(material=material).count()
+                if supplier_count > 0:
+                    success_message += f' Reorder level also updated for {supplier_count} supplier association(s).'
+            
+            messages.success(request, success_message)
             logger.info(f"Updated material: {material.material_name} by user {request.user.id}")
             return redirect('material-list-web')
             
@@ -275,6 +345,65 @@ def material_update_quantity(request, material_id):
         
     except Exception as e:
         logger.error(f"Error updating material quantity: {str(e)}")
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@admin_or_operator_required
+@require_http_methods(["POST"])
+def material_update_reorder_level(request, material_id):
+    """
+    Update material reorder level via AJAX.
+    Validates: Requirements 13.3
+    """
+    try:
+        material = get_object_or_404(RawMaterial, id=material_id)
+        
+        # Parse JSON body
+        data = json.loads(request.body)
+        default_reorder_level = data.get('default_reorder_level')
+        
+        # Check if reorder level is changing
+        old_reorder_level = material.default_reorder_level
+        
+        # Update reorder level (can be None/empty to disable alerts)
+        if default_reorder_level == '' or default_reorder_level is None:
+            new_reorder_level = None
+        else:
+            new_reorder_level = default_reorder_level
+        
+        reorder_level_changed = old_reorder_level != new_reorder_level
+        material.default_reorder_level = new_reorder_level
+        
+        with transaction.atomic():
+            material.save()
+            
+            # Sync reorder level to all associated suppliers if it changed
+            if reorder_level_changed:
+                updated_count = MaterialSupplier.objects.filter(material=material).update(
+                    reorder_level=new_reorder_level
+                )
+                logger.info(f"Synced reorder level ({new_reorder_level}) to {updated_count} suppliers for material: {material.material_name}")
+        
+        logger.info(f"Updated material reorder level for {material.material_name}: {default_reorder_level} by user {request.user.id}")
+        
+        success_message = 'Reorder level updated successfully'
+        if reorder_level_changed:
+            supplier_count = MaterialSupplier.objects.filter(material=material).count()
+            if supplier_count > 0:
+                success_message += f' and synced to {supplier_count} supplier association(s)'
+        
+        return JsonResponse({
+            'success': True,
+            'message': success_message,
+            'material_id': material.id,
+            'default_reorder_level': float(material.default_reorder_level) if material.default_reorder_level else None,
+            'last_updated': material.last_updated.isoformat(),
+            'synced_suppliers': MaterialSupplier.objects.filter(material=material).count() if reorder_level_changed else 0
+        })
+        
+    except Exception as e:
+        logger.error(f"Error updating material reorder level: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
 
 
@@ -514,8 +643,38 @@ def material_supplier_create(request):
                     lead_time_days=lead_time_days if lead_time_days else None,
                     is_preferred=is_preferred
                 )
+                
+                # If this is the first supplier for this material and has a reorder level,
+                # or if this is marked as preferred, sync the reorder level to the material
+                if reorder_level:
+                    material = RawMaterial.objects.get(id=material_id)
+                    total_suppliers = MaterialSupplier.objects.filter(material=material).count()
+                    
+                    should_sync = (
+                        is_preferred or  # This is marked as preferred
+                        total_suppliers == 1 or  # This is the first supplier for this material
+                        material.default_reorder_level is None  # Material doesn't have a default reorder level yet
+                    )
+                    
+                    if should_sync:
+                        material.default_reorder_level = reorder_level
+                        material.save()
+                        logger.info(f"Set material default reorder level ({reorder_level}) from new supplier association: {material.material_name}")
             
-            messages.success(request, 'Material-Supplier association created successfully.')
+            success_message = 'Material-Supplier association created successfully.'
+            if reorder_level:
+                material = RawMaterial.objects.get(id=material_id)
+                total_suppliers = MaterialSupplier.objects.filter(material=material).count()
+                should_sync = (
+                    is_preferred or 
+                    total_suppliers == 1 or 
+                    material.default_reorder_level is None
+                )
+                
+                if should_sync:
+                    success_message += f' Material default reorder level set to {reorder_level}.'
+            
+            messages.success(request, success_message)
             logger.info(f"Created material-supplier association: {material_supplier} by user {request.user.id}")
             return redirect('material-supplier-list-web')
             
@@ -550,16 +709,46 @@ def material_supplier_edit(request, ms_id):
     
     if request.method == 'POST':
         try:
+            # Check if reorder level is changing
+            old_reorder_level = material_supplier.reorder_level
+            new_reorder_level = request.POST.get('reorder_level') or None
+            reorder_level_changed = old_reorder_level != new_reorder_level
+            
             material_supplier.supplier_price = request.POST.get('supplier_price') or None
             material_supplier.min_order_quantity = request.POST.get('min_order_quantity') or None
-            material_supplier.reorder_level = request.POST.get('reorder_level') or None
+            material_supplier.reorder_level = new_reorder_level
             material_supplier.lead_time_days = request.POST.get('lead_time_days') or None
             material_supplier.is_preferred = request.POST.get('is_preferred') == 'on'
             
             with transaction.atomic():
                 material_supplier.save()
+                
+                # Sync reorder level back to material if this is the preferred supplier
+                # or if there's only one supplier for this material
+                if reorder_level_changed and new_reorder_level is not None:
+                    material = material_supplier.material
+                    total_suppliers = MaterialSupplier.objects.filter(material=material).count()
+                    
+                    should_sync = (
+                        material_supplier.is_preferred or  # This is the preferred supplier
+                        total_suppliers == 1  # Only one supplier for this material
+                    )
+                    
+                    if should_sync:
+                        material.default_reorder_level = new_reorder_level
+                        material.save()
+                        logger.info(f"Synced reorder level ({new_reorder_level}) from supplier to material: {material.material_name}")
             
-            messages.success(request, 'Material-Supplier association updated successfully.')
+            success_message = 'Material-Supplier association updated successfully.'
+            if reorder_level_changed and new_reorder_level is not None:
+                material = material_supplier.material
+                total_suppliers = MaterialSupplier.objects.filter(material=material).count()
+                should_sync = material_supplier.is_preferred or total_suppliers == 1
+                
+                if should_sync:
+                    success_message += f' Material default reorder level also updated to {new_reorder_level}.'
+            
+            messages.success(request, success_message)
             logger.info(f"Updated material-supplier association: {material_supplier} by user {request.user.id}")
             return redirect('material-supplier-list-web')
             
@@ -715,12 +904,32 @@ def manufacturing_spec_create(request):
             material_id = request.POST.get('material')
             quantity_required = request.POST.get('quantity_required')
             
-            if not all([variant_size_id, material_id, quantity_required]):
-                messages.error(request, 'All fields are required.')
+            # Debug logging
+            logger.info(f"Form submission - variant_size: {variant_size_id}, material: {material_id}, quantity: {quantity_required}")
+            
+            # Validate that fields are not empty or 'undefined'
+            if not variant_size_id or variant_size_id == '' or variant_size_id == 'undefined':
+                messages.error(request, 'Please select a product, variant, and size.')
                 return render(request, 'manufacturing/specification_form.html', {
                     'products': Product.objects.all(),
                     'materials': RawMaterial.objects.select_related('material_type').all(),
-                    'form_error': 'All fields are required'
+                    'form_error': 'Please select a product, variant, and size'
+                })
+            
+            if not material_id or material_id == '' or material_id == 'undefined':
+                messages.error(request, 'Please select a material.')
+                return render(request, 'manufacturing/specification_form.html', {
+                    'products': Product.objects.all(),
+                    'materials': RawMaterial.objects.select_related('material_type').all(),
+                    'form_error': 'Please select a material'
+                })
+            
+            if not quantity_required or quantity_required == '':
+                messages.error(request, 'Please enter a quantity.')
+                return render(request, 'manufacturing/specification_form.html', {
+                    'products': Product.objects.all(),
+                    'materials': RawMaterial.objects.select_related('material_type').all(),
+                    'form_error': 'Please enter a quantity'
                 })
             
             # Check if specification already exists

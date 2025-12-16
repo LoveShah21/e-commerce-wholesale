@@ -27,7 +27,7 @@
                         <select class="form-select" id="status" name="status">
                             <option value="">All Statuses</option>
                             {% for value, label in status_choices %}
-                            <option value="{{ value }}" {% if status_filter==value %}selected{% endif %}>
+                            <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>
                                 {{ label }}
                             </option>
                             {% endfor %}
@@ -101,8 +101,7 @@
                                 </td>
                                 <td>
                                     <span class="badge bg-secondary">
-                                        {{ inquiry.quotation_requests.count }} request{{
-                                        inquiry.quotation_requests.count|pluralize }}
+                                        {{ inquiry.quotation_requests.count }} request{{ inquiry.quotation_requests.count|pluralize }}
                                     </span>
                                 </td>
                                 <td>

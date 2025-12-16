@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from .models import Order, Cart, CartItem
 from .serializers import OrderSerializer, OrderCreateSerializer, CartSerializer, CartItemSerializer
 from services.cart_service import CartService
+from apps.users.permissions import IsAdmin
 
 class OrderListCreateView(generics.ListCreateAPIView):
     permission_classes = (permissions.IsAuthenticated,)
@@ -45,10 +46,9 @@ class OrderDetailView(generics.RetrieveAPIView):
     def get_queryset(self):
         """
         Optimized queryset with select_related and prefetch_related.
+        Allow admin users to access any order, regular users only their own orders.
         """
-        return Order.objects.filter(
-            user=self.request.user
-        ).select_related(
+        base_queryset = Order.objects.select_related(
             'user',
             'delivery_address',
             'delivery_address__postal_code',
@@ -63,6 +63,12 @@ class OrderDetailView(generics.RetrieveAPIView):
             'items__variant_size__size',
             'items__variant_size__stock_record'
         )
+        
+        # Admin users can access any order, regular users only their own
+        if self.request.user.is_staff:
+            return base_queryset
+        else:
+            return base_queryset.filter(user=self.request.user)
 
 class CartViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)

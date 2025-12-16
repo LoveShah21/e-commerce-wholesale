@@ -291,7 +291,7 @@ class InventoryViewAPIView(APIView):
             inventory_data.append(inventory_item)
         
         # Filter by reorder alerts if requested
-        show_alerts_only = request.query_params.get('alerts_only', 'false').lower() == 'true'
+        show_alerts_only = request.GET.get('alerts_only', 'false').lower() == 'true'
         if show_alerts_only:
             inventory_data = [item for item in inventory_data if item['is_below_reorder']]
         

@@ -39,10 +39,11 @@ class AdminOrderListView(LoginRequiredMixin, AdminRequiredMixin, View):
         date_to = request.GET.get('date_to', '')
         payment_status = request.GET.get('payment_status', '')
         
-        # Base queryset
+        # Base queryset with proper prefetching for total_amount calculation
         orders = Order.objects.select_related(
             'user', 'delivery_address'
         ).prefetch_related(
+            'items',  # This is needed for the total_amount property
             'items__variant_size__variant__product',
             'items__variant_size__size'
         ).order_by('-order_date')
@@ -105,15 +106,9 @@ class AdminOrderListView(LoginRequiredMixin, AdminRequiredMixin, View):
         page_number = request.GET.get('page')
         page_obj = paginator.get_page(page_number)
         
-        # Calculate totals for each order
+        # Add payment status to each order
         orders_with_totals = []
         for order in page_obj:
-            try:
-                totals = OrderService.get_order_total(order.id)
-                order.total_amount = totals['total']
-            except Exception:
-                order.total_amount = Decimal('0.00')
-            
             # Get payment status
             advance_payment = Payment.objects.filter(
                 order=order,

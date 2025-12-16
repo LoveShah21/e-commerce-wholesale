@@ -1,0 +1,309 @@
+{% extends 'base.html' %}
+
+{% block title %}User Details - {{ user_detail.full_name }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2><i class="bi bi-person me-2"></i>{{ user_detail.full_name }}</h2>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'admin-user-list' %}">Users</a></li>
+                        <li class="breadcrumb-item active">{{ user_detail.full_name }}</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="btn-group">
+                <a href="{% url 'admin-user-edit' user_detail.id %}" class="btn btn-primary">
+                    <i class="bi bi-pencil me-2"></i>Edit User
+                </a>
+                {% if user_detail.id != request.user.id %}
+                <button type="button" class="btn btn-outline-danger"
+                    onclick="confirmDelete({{ user_detail.id }}, '{{ user_detail.full_name }}')">
+                    <i class="bi bi-trash me-2"></i>Delete User
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- User Information -->
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="bi bi-info-circle me-2"></i>User Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>Full Name:</strong></td>
+                                <td>{{ user_detail.full_name }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Email:</strong></td>
+                                <td>{{ user_detail.email }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Phone:</strong></td>
+                                <td>{{ user_detail.phone|default:"-" }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Username:</strong></td>
+                                <td>{{ user_detail.username }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <td><strong>User Type:</strong></td>
+                                <td>
+                                    {% if user_detail.user_type == 'admin' %}
+                                    <span class="badge bg-danger">Admin</span>
+                                    {% elif user_detail.user_type == 'operator' %}
+                                    <span class="badge bg-warning text-dark">Operator</span>
+                                    {% else %}
+                                    <span class="badge bg-info">Customer</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Status:</strong></td>
+                                <td>
+                                    {% if user_detail.account_status == 'active' %}
+                                    <span class="badge bg-success">Active</span>
+                                    {% elif user_detail.account_status == 'suspended' %}
+                                    <span class="badge bg-danger">Suspended</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Joined:</strong></td>
+                                <td>{{ user_detail.date_joined|date:"F d, Y H:i" }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Last Login:</strong></td>
+                                <td>
+                                    {% if user_detail.last_login %}
+                                    {{ user_detail.last_login|date:"F d, Y H:i" }}
+                                    {% else %}
+                                    <span class="text-muted">Never</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Addresses -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="bi bi-geo-alt me-2"></i>Addresses</h5>
+            </div>
+            <div class="card-body">
+                {% if addresses %}
+                <div class="row">
+                    {% for address in addresses %}
+                    <div class="col-md-6 mb-3">
+                        <div class="border rounded p-3">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="mb-0">
+                                    {{ address.get_address_type_display }}
+                                    {% if address.is_default %}
+                                    <span class="badge bg-primary ms-1">Default</span>
+                                    {% endif %}
+                                </h6>
+                            </div>
+                            <p class="mb-1">{{ address.address_line1 }}</p>
+                            {% if address.address_line2 %}
+                            <p class="mb-1">{{ address.address_line2 }}</p>
+                            {% endif %}
+                            <p class="mb-1">{{ address.postal_code.city.city_name }}, {{ address.postal_code.city.state.state_name }}</p>
+                            <p class="mb-0">{{ address.postal_code.city.state.country.country_name }} - {{ address.postal_code.postal_code }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted mb-0">No addresses found for this user.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="bi bi-lightning me-2"></i>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <!-- Status Toggle -->
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary dropdown-toggle w-100" type="button" 
+                            data-bs-toggle="dropdown">
+                            <i class="bi bi-toggle-on me-2"></i>Change Status
+                        </button>
+                        <ul class="dropdown-menu w-100">
+                            {% if user_detail.account_status != 'active' %}
+                            <li>
+                                <form method="post" action="{% url 'admin-user-status-toggle' user_detail.id %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="status" value="active">
+                                    <button type="submit" class="dropdown-item">
+                                        <i class="bi bi-check-circle text-success me-2"></i>Set Active
+                                    </button>
+                                </form>
+                            </li>
+                            {% endif %}
+                            {% if user_detail.account_status != 'inactive' %}
+                            <li>
+                                <form method="post" action="{% url 'admin-user-status-toggle' user_detail.id %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="status" value="inactive">
+                                    <button type="submit" class="dropdown-item">
+                                        <i class="bi bi-pause-circle text-secondary me-2"></i>Set Inactive
+                                    </button>
+                                </form>
+                            </li>
+                            {% endif %}
+                            {% if user_detail.account_status != 'suspended' %}
+                            <li>
+                                <form method="post" action="{% url 'admin-user-status-toggle' user_detail.id %}">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="status" value="suspended">
+                                    <button type="submit" class="dropdown-item">
+                                        <i class="bi bi-x-circle text-danger me-2"></i>Suspend
+                                    </button>
+                                </form>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+
+                    <!-- Other Actions -->
+                    <a href="{% url 'admin-user-edit' user_detail.id %}" class="btn btn-outline-primary">
+                        <i class="bi bi-pencil me-2"></i>Edit Details
+                    </a>
+                    
+                    {% if order_count > 0 %}
+                    <a href="/admin/orders/?user={{ user_detail.id }}" class="btn btn-outline-info">
+                        <i class="bi bi-box-seam me-2"></i>View Orders ({{ order_count }})
+                    </a>
+                    {% endif %}
+                    
+                    {% if user_detail.id != request.user.id %}
+                    <button type="button" class="btn btn-outline-danger"
+                        onclick="confirmDelete({{ user_detail.id }}, '{{ user_detail.full_name }}')">
+                        <i class="bi bi-trash me-2"></i>Delete User
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- User Stats -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="bi bi-bar-chart me-2"></i>User Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center mb-3">
+                    <div class="col-4">
+                        <div class="border-end">
+                            <h4 class="text-primary mb-1">{{ user_detail.addresses.count }}</h4>
+                            <small class="text-muted">Addresses</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="border-end">
+                            <h4 class="text-success mb-1">{{ order_count|default:0 }}</h4>
+                            <small class="text-muted">Orders</small>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <h4 class="text-warning mb-1">₹{{ total_spent|default:0|floatformat:0 }}</h4>
+                        <small class="text-muted">Total Spent</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Orders -->
+        {% if recent_orders %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="bi bi-clock-history me-2"></i>Recent Orders</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for order in recent_orders %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <div>
+                            <h6 class="mb-1">Order #{{ order.id }}</h6>
+                            <small class="text-muted">{{ order.order_date|date:"M d, Y" }}</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-{% if order.status == 'delivered' %}success{% elif order.status == 'cancelled' %}danger{% elif order.status == 'processing' %}warning{% else %}primary{% endif %}">
+                                {{ order.get_status_display }}
+                            </span>
+                            <div class="small text-muted">₹{{ order.total_amount|floatformat:0 }}</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% if order_count > 5 %}
+                <div class="text-center mt-3">
+                    <small class="text-muted">Showing 5 of {{ order_count }} orders</small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete user <strong id="deleteUserName"></strong>?</p>
+                <p class="text-danger"><i class="bi bi-exclamation-triangle me-2"></i>This action cannot be undone. All user data including orders and addresses will be affected.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete User</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function confirmDelete(userId, userName) {
+        document.getElementById('deleteUserName').textContent = userName;
+        document.getElementById('deleteForm').action = '/admin/users/' + userId + '/delete/';
+        new bootstrap.Modal(document.getElementById('deleteModal')).show();
+    }
+</script>
+{% endblock %}

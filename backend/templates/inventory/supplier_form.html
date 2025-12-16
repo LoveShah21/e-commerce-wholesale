@@ -71,8 +71,7 @@
                         <select class="form-select {% if errors.city %}is-invalid{% endif %}" id="city" name="city">
                             <option value="">Select City</option>
                             {% for city in cities %}
-                            <option value="{{ city.id }}" {% if supplier and supplier.city and supplier.city.id==city.id
-                                %}selected{% endif %}>
+                            <option value="{{ city.id }}" {% if supplier and supplier.city and supplier.city.id == city.id %}selected{% endif %}>
                                 {{ city.city_name }}, {{ city.state.state_name }}
                             </option>
                             {% endfor %}

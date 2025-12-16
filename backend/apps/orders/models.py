@@ -48,6 +48,15 @@ class Order(models.Model):
     notes = models.TextField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    @property
+    def total_amount(self):
+        """Calculate total amount from order items"""
+        from decimal import Decimal
+        total = Decimal('0.00')
+        for item in self.items.all():
+            total += item.snapshot_unit_price * item.quantity
+        return total
+
     def __str__(self):
         return f"Order #{self.id} - {self.user}"
 

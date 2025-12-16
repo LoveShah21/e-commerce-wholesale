@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+
+{% block title %}Financial Report - Admin{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2><i class="bi bi-currency-rupee me-2"></i>Financial Report</h2>
+                <p class="text-muted">Payment analytics, revenue tracking, and financial insights</p>
+            </div>
+            <a href="{% url 'admin-reports-list' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Reports
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Period Filter -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" action="{% url 'admin-financial-report' %}" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="period" class="form-label">Time Period</label>
+                        <select class="form-select" id="period" name="period">
+                            <option value="7" {% if period == '7' %}selected{% endif %}>Last 7 days</option>
+                            <option value="30" {% if period == '30' %}selected{% endif %}>Last 30 days</option>
+                            <option value="90" {% if period == '90' %}selected{% endif %}>Last 90 days</option>
+                            <option value="365" {% if period == '365' %}selected{% endif %}>Last year</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="bi bi-search me-1"></i>Update
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PDF Download Form -->
+<div class="row mb-4">
+    <div class="col-12">
+        <form method="post" action="{% url 'admin-financial-report' %}" class="d-inline">
+            {% csrf_token %}
+            <input type="hidden" name="period" value="{{ period }}">
+            <button type="submit" class="btn btn-success">
+                <i class="bi bi-download me-1"></i>Download PDF Report
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Revenue Summary -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <h3>₹{{ total_revenue|floatformat:2 }}</h3>
+                <p class="mb-0">Total Revenue</p>
+                <small>{{ start_date|date:"M d" }} - {{ end_date|date:"M d, Y" }}</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <h3>₹{{ advance_revenue|floatformat:2 }}</h3>
+                <p class="mb-0">Advance Payments</p>
+                <small>Received in period</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <h3>₹{{ final_revenue|floatformat:2 }}</h3>
+                <p class="mb-0">Final Payments</p>
+                <small>Received in period</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Analytics -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-pie-chart me-2"></i>Payment Status Breakdown</h5>
+            </div>
+            <div class="card-body">
+                {% for status, count in payment_status_counts.items %}
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span>{{ status }} Payments</span>
+                    <div class="d-flex align-items-center">
+                        <div class="progress me-2" style="width: 100px; height: 20px;">
+                            {% with total_payments=payment_status_counts.Success|add:payment_status_counts.Pending|add:payment_status_counts.Failed %}
+                            <div class="progress-bar 
+                                {% if status == 'Success' %}bg-success
+                                {% elif status == 'Pending' %}bg-warning
+                                {% else %}bg-danger{% endif %}" 
+                                role="progressbar" 
+                                style="width: {% if total_payments > 0 %}{% widthratio count total_payments 100 %}{% else %}0{% endif %}%">
+                            </div>
+                            {% endwith %}
+                        </div>
+                        <span class="badge 
+                            {% if status == 'Success' %}bg-success
+                            {% elif status == 'Pending' %}bg-warning
+                            {% else %}bg-danger{% endif %}">{{ count }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-bar-chart me-2"></i>Payment Type Distribution</h5>
+            </div>
+            <div class="card-body">
+                {% for type, count in payment_type_counts.items %}
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span>{{ type }} Payments</span>
+                    <div class="d-flex align-items-center">
+                        <div class="progress me-2" style="width: 100px; height: 20px;">
+                            {% with total_types=payment_type_counts.Advance|add:payment_type_counts.Final %}
+                            <div class="progress-bar 
+                                {% if type == 'Advance' %}bg-info
+                                {% else %}bg-primary{% endif %}" 
+                                role="progressbar" 
+                                style="width: {% if total_types > 0 %}{% widthratio count total_types 100 %}{% else %}0{% endif %}%">
+                            </div>
+                            {% endwith %}
+                        </div>
+                        <span class="badge 
+                            {% if type == 'Advance' %}bg-info
+                            {% else %}bg-primary{% endif %}">{{ count }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Daily Revenue Trend -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-graph-up me-2"></i>Daily Revenue Trend</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive" style="max-height: 400px;">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Revenue</th>
+                                <th>Trend</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for date, revenue in daily_revenue.items %}
+                            <tr>
+                                <td>{{ date|date:"M d, Y" }}</td>
+                                <td>₹{{ revenue|floatformat:2 }}</td>
+                                <td>
+                                    {% if revenue > 0 %}
+                                    <div class="progress" style="height: 15px; width: 150px;">
+                                        <div class="progress-bar bg-success" 
+                                             style="width: {% if max_revenue > 0 %}{% widthratio revenue max_revenue 100 %}{% else %}0{% endif %}%"></div>
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    <span class="text-muted">No revenue</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

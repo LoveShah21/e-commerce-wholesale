@@ -4,15 +4,14 @@ from django.contrib import messages
 from django.db.models import Q, Prefetch
 from django.db import transaction
 from django.utils import timezone
-from apps.users.permissions import admin_required, AdminRequiredMixin
+from apps.users.permissions import AdminRequiredMixin
 from .models import Inquiry, QuotationRequest, QuotationPrice, Complaint, Feedback
 from apps.products.models import Product, ProductVariant, VariantSize
 
 
-class AdminInquiryListView(View):
+class AdminInquiryListView(AdminRequiredMixin, View):
     """Admin view for listing all inquiries"""
     
-    @admin_required
     def get(self, request):
         inquiries = Inquiry.objects.select_related('user').prefetch_related(
             'quotation_requests__variant_size__variant__product',
@@ -43,10 +42,9 @@ class AdminInquiryListView(View):
         return render(request, 'support/admin/inquiry_list.html', context)
 
 
-class AdminInquiryDetailView(View):
+class AdminInquiryDetailView(AdminRequiredMixin, View):
     """Admin view for viewing inquiry details and managing quotations"""
     
-    @admin_required
     def get(self, request, pk):
         inquiry = get_object_or_404(
             Inquiry.objects.select_related('user').prefetch_related(
@@ -69,7 +67,7 @@ class AdminInquiryDetailView(View):
             'variants__fabric',
             'variants__color',
             'variants__pattern',
-            'variants__variant_sizes__size'
+            'variants__sizes__size'
         ).all()
         
         context = {
@@ -80,10 +78,9 @@ class AdminInquiryDetailView(View):
         return render(request, 'support/admin/inquiry_detail.html', context)
 
 
-class AdminQuotationRequestCreateView(View):
+class AdminQuotationRequestCreateView(AdminRequiredMixin, View):
     """Admin view for creating a quotation request"""
     
-    @admin_required
     def post(self, request, inquiry_id):
         inquiry = get_object_or_404(Inquiry, pk=inquiry_id)
         
@@ -110,10 +107,9 @@ class AdminQuotationRequestCreateView(View):
         return redirect('admin-inquiry-detail', pk=inquiry_id)
 
 
-class AdminQuotationPriceCreateView(View):
+class AdminQuotationPriceCreateView(AdminRequiredMixin, View):
     """Admin view for providing a price quote"""
     
-    @admin_required
     def post(self, request, quotation_request_id):
         quotation_request = get_object_or_404(QuotationRequest, pk=quotation_request_id)
         
@@ -157,10 +153,9 @@ class AdminQuotationPriceCreateView(View):
         return redirect('admin-inquiry-detail', pk=quotation_request.inquiry.id)
 
 
-class AdminQuotationPriceSendView(View):
+class AdminQuotationPriceSendView(AdminRequiredMixin, View):
     """Admin view for sending a quotation to customer"""
     
-    @admin_required
     def post(self, request, quotation_price_id):
         quotation_price = get_object_or_404(QuotationPrice, pk=quotation_price_id)
         
@@ -183,10 +178,9 @@ class AdminQuotationPriceSendView(View):
         return redirect('admin-inquiry-detail', pk=quotation_price.quotation.inquiry.id)
 
 
-class AdminQuotationStatusUpdateView(View):
+class AdminQuotationStatusUpdateView(AdminRequiredMixin, View):
     """Admin view for updating quotation status"""
     
-    @admin_required
     def post(self, request, quotation_request_id):
         quotation_request = get_object_or_404(QuotationRequest, pk=quotation_request_id)
         
@@ -211,7 +205,7 @@ class AdminComplaintListView(AdminRequiredMixin, View):
     """Admin view for listing all complaints"""
     
     def get(self, request):
-        complaints = Complaint.objects.select_related('user', 'order').order_by('-complaint_date')
+        complaints = Complaint.objects.select_related('user', 'order').prefetch_related('order__items').order_by('-complaint_date')
         
         # Apply status filter
         status_filter = request.GET.get('status', '')
@@ -249,7 +243,7 @@ class AdminComplaintDetailView(AdminRequiredMixin, View):
     
     def get(self, request, pk):
         complaint = get_object_or_404(
-            Complaint.objects.select_related('user', 'order'),
+            Complaint.objects.select_related('user', 'order').prefetch_related('order__items'),
             pk=pk
         )
         
@@ -300,7 +294,7 @@ class AdminFeedbackListView(AdminRequiredMixin, View):
     """Admin view for viewing all customer feedback"""
     
     def get(self, request):
-        feedbacks = Feedback.objects.select_related('user', 'order').order_by('-feedback_date')
+        feedbacks = Feedback.objects.select_related('user', 'order').prefetch_related('order__items').order_by('-feedback_date')
         
         # Apply rating filter
         rating_filter = request.GET.get('rating', '')

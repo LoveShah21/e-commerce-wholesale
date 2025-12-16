@@ -33,12 +33,10 @@
 
                     <div class="mb-3">
                         <label for="product" class="form-label">Product <span class="text-danger">*</span></label>
-                        <select class="form-select" id="product" name="product" required {% if specification
-                            %}disabled{% endif %}>
+                        <select class="form-select" id="product" name="product" required {% if specification %}disabled{% endif %}>
                             <option value="">Select Product</option>
                             {% for product in products %}
-                            <option value="{{ product.id }}" {% if specification and
-                                specification.variant_size.variant.product.id==product.id %}selected{% endif %}>
+                            <option value="{{ product.id }}" {% if specification and specification.variant_size.variant.product.id == product.id %}selected{% endif %}>
                                 {{ product.product_name }}
                             </option>
                             {% endfor %}
@@ -48,8 +46,7 @@
 
                     <div class="mb-3">
                         <label for="variant" class="form-label">Variant <span class="text-danger">*</span></label>
-                        <select class="form-select" id="variant" name="variant" required {% if specification
-                            %}disabled{% endif %}>
+                        <select class="form-select" id="variant" name="variant" required {% if specification %}disabled{% endif %}>
                             <option value="">Select Product First</option>
                             {% if specification %}
                             <option value="{{ specification.variant_size.variant.id }}" selected>
@@ -65,8 +62,7 @@
 
                     <div class="mb-3">
                         <label for="variant_size" class="form-label">Size <span class="text-danger">*</span></label>
-                        <select class="form-select" id="variant_size" name="variant_size" required {% if specification
-                            %}disabled{% endif %}>
+                        <select class="form-select" id="variant_size" name="variant_size" required {% if specification %}disabled{% endif %}>
                             <option value="">Select Variant First</option>
                             {% if specification %}
                             <option value="{{ specification.variant_size.id }}" selected>
@@ -79,14 +75,12 @@
 
                     <div class="mb-3">
                         <label for="material" class="form-label">Material <span class="text-danger">*</span></label>
-                        <select class="form-select" id="material" name="material" required {% if specification
-                            %}disabled{% endif %}>
+                        <select class="form-select" id="material" name="material" required {% if specification %}disabled{% endif %}>
                             <option value="">Select Material</option>
                             {% for material in materials %}
                             <option value="{{ material.id }}"
                                 data-unit="{{ material.material_type.unit_of_measurement }}"
-                                data-price="{{ material.unit_price }}" {% if specification and
-                                specification.material.id==material.id %}selected{% endif %}>
+                                data-price="{{ material.unit_price }}" {% if specification and specification.material.id == material.id %}selected{% endif %}>
                                 {{ material.material_name }} ({{ material.material_type.material_type_name }})
                             </option>
                             {% endfor %}
@@ -126,8 +120,7 @@
 
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-circle me-2"></i>{% if specification %}Update{% else %}Create{% endif
-                            %} Specification
+                            <i class="bi bi-check-circle me-2"></i>{% if specification %}Update{% else %}Create{% endif %} Specification
                         </button>
                         <a href="{% url 'manufacturing-spec-list-web' %}" class="btn btn-secondary">
                             <i class="bi bi-x-circle me-2"></i>Cancel
@@ -231,18 +224,25 @@
             if (data.sizes && data.sizes.length > 0) {
                 data.sizes.forEach(size => {
                     const option = document.createElement('option');
-                    option.value = size.variant_size_id;
-                    option.textContent = size.size_name;
-                    sizeSelect.appendChild(option);
+                    // Use 'id' instead of 'variant_size_id' as that's what the API returns
+                    if (size.id && size.id !== 'undefined') {
+                        option.value = size.id;
+                        option.textContent = size.size_name;
+                        sizeSelect.appendChild(option);
+                    } else {
+                        console.error('Invalid id for size:', size);
+                    }
                 });
             } else {
                 sizeSelect.innerHTML = '<option value="">No sizes available</option>';
             }
+
         } catch (error) {
             console.error('Error loading sizes:', error);
             sizeSelect.innerHTML = '<option value="">Error loading sizes</option>';
         }
     });
+
 
     // Update unit display and cost calculation when material is selected
     document.getElementById('material').addEventListener('change', function () {
@@ -273,5 +273,39 @@
     {% if specification %}
     updateCostCalculation();
     {% endif %}
+
+    // Form validation before submission
+    document.getElementById('specificationForm').addEventListener('submit', function(e) {
+        const variantSize = document.getElementById('variant_size').value;
+        const material = document.getElementById('material').value;
+        const quantity = document.getElementById('quantity_required').value;
+
+        // Check if all required fields are filled
+        if (!variantSize || variantSize === '' || variantSize === 'undefined') {
+            e.preventDefault();
+            alert('Please select a product, variant, and size before submitting.');
+            document.getElementById('variant_size').focus();
+            return false;
+        }
+
+        if (!material || material === '' || material === 'undefined') {
+            e.preventDefault();
+            alert('Please select a material before submitting.');
+            document.getElementById('material').focus();
+            return false;
+        }
+
+        if (!quantity || parseFloat(quantity) <= 0) {
+            e.preventDefault();
+            alert('Please enter a valid quantity (greater than 0).');
+            document.getElementById('quantity_required').focus();
+            return false;
+        }
+
+        return true;
+    });
+
+
+
 </script>
 {% endblock %}

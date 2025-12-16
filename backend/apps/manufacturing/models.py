@@ -27,6 +27,7 @@ class RawMaterial(models.Model):
     material_type = models.ForeignKey(MaterialType, on_delete=models.RESTRICT)
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
     current_quantity = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    default_reorder_level = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, help_text="Default minimum stock level for reorder alerts")
     created_at = models.DateTimeField(auto_now_add=True)
     last_updated = models.DateTimeField(auto_now=True)
 

@@ -30,8 +30,7 @@
                         <select class="form-select" id="material" name="material">
                             <option value="">All Materials</option>
                             {% for mat in materials %}
-                            <option value="{{ mat.id }}" {% if selected_material==mat.id|stringformat:"s" %}selected{%
-                                endif %}>
+                            <option value="{{ mat.id }}" {% if selected_material == mat.id|stringformat:"s" %}selected{% endif %}>
                                 {{ mat.material_name }}
                             </option>
                             {% endfor %}
@@ -42,8 +41,7 @@
                         <select class="form-select" id="product" name="product">
                             <option value="">All Products</option>
                             {% for prod in products %}
-                            <option value="{{ prod.id }}" {% if selected_product==prod.id|stringformat:"s" %}selected{%
-                                endif %}>
+                            <option value="{{ prod.id }}" {% if selected_product == prod.id|stringformat:"s" %}selected{% endif %}>
                                 {{ prod.product_name }}
                             </option>
                             {% endfor %}
@@ -87,13 +85,10 @@
                                 </td>
                                 <td>
                                     <div class="d-flex flex-wrap gap-1">
-                                        <span class="badge bg-info">{{ spec.variant_size.variant.fabric.fabric_name
-                                            }}</span>
-                                        <span class="badge bg-secondary">{{ spec.variant_size.variant.color.color_name
-                                            }}</span>
+                                        <span class="badge bg-info">{{ spec.variant_size.variant.fabric.fabric_name }}</span>
+                                        <span class="badge bg-secondary">{{ spec.variant_size.variant.color.color_name }}</span>
                                         {% if spec.variant_size.variant.pattern %}
-                                        <span class="badge bg-light text-dark">{{
-                                            spec.variant_size.variant.pattern.pattern_name }}</span>
+                                        <span class="badge bg-light text-dark">{{ spec.variant_size.variant.pattern.pattern_name }}</span>
                                         {% endif %}
                                     </div>
                                 </td>
@@ -103,8 +98,7 @@
                                 <td>
                                     <strong>{{ spec.material.material_name }}</strong>
                                     <br>
-                                    <small class="text-muted">{{ spec.material.material_type.material_type_name
-                                        }}</small>
+                                    <small class="text-muted">{{ spec.material.material_type.material_type_name }}</small>
                                 </td>
                                 <td>
                                     {{ spec.quantity_required }} {{ spec.material.material_type.unit_of_measurement }}

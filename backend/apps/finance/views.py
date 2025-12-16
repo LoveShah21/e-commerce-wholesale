@@ -252,6 +252,21 @@ class PaymentStatusView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
     
     def get(self, request, order_id):
+        # Check if user has permission to view this order
+        from apps.orders.models import Order
+        try:
+            if request.user.is_staff:
+                # Admin can access any order
+                order = Order.objects.get(id=order_id)
+            else:
+                # Regular users can only access their own orders
+                order = Order.objects.get(id=order_id, user=request.user)
+        except Order.DoesNotExist:
+            return Response(
+                {'error': 'Order not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
         try:
             result = PaymentService.check_payment_completion(order_id)
             return Response(result, status=status.HTTP_200_OK)

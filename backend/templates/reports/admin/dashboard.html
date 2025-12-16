@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+
+{% block title %}Reports Dashboard - Admin{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="bi bi-graph-up me-2"></i>Reports Dashboard</h2>
+        <p class="text-muted">View business analytics and generate reports</p>
+    </div>
+</div>
+
+<!-- Quick Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ total_orders }}</h4>
+                        <p class="card-text">Total Orders</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-cart-check fs-1"></i>
+                    </div>
+                </div>
+                <small>{{ this_month_orders }} this month</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">₹{{ total_revenue|floatformat:2 }}</h4>
+                        <p class="card-text">Total Revenue</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-currency-rupee fs-1"></i>
+                    </div>
+                </div>
+                <small>₹{{ this_month_revenue|floatformat:2 }} this month</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ pending_orders }}</h4>
+                        <p class="card-text">Pending Orders</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-clock fs-1"></i>
+                    </div>
+                </div>
+                <small>Require attention</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ total_products }}</h4>
+                        <p class="card-text">Products</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-box fs-1"></i>
+                    </div>
+                </div>
+                <small>{{ total_variants }} variants</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Stats -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-credit-card me-2"></i>Payment Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="text-center">
+                            <h3 class="text-success">{{ successful_payments }}</h3>
+                            <p class="text-muted">Successful Payments</p>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center">
+                            <h3 class="text-warning">{{ pending_payments }}</h3>
+                            <p class="text-muted">Pending Payments</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-bar-chart me-2"></i>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'admin-sales-report' %}" class="btn btn-primary">
+                        <i class="bi bi-graph-up me-2"></i>View Sales Report
+                    </a>
+                    <a href="{% url 'admin-order-report' %}" class="btn btn-info">
+                        <i class="bi bi-cart-check me-2"></i>View Order Analytics
+                    </a>
+                    <a href="{% url 'admin-financial-report' %}" class="btn btn-success">
+                        <i class="bi bi-currency-rupee me-2"></i>View Financial Report
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Available Reports -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-file-earmark-text me-2"></i>Available Reports</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card border">
+                            <div class="card-body text-center">
+                                <i class="bi bi-graph-up fs-1 text-primary mb-3"></i>
+                                <h5>Sales Report</h5>
+                                <p class="text-muted">Detailed sales analytics with filtering options</p>
+                                <a href="{% url 'admin-sales-report' %}" class="btn btn-primary">View Report</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border">
+                            <div class="card-body text-center">
+                                <i class="bi bi-cart-check fs-1 text-info mb-3"></i>
+                                <h5>Order Analytics</h5>
+                                <p class="text-muted">Order trends, customer analysis, and status tracking</p>
+                                <a href="{% url 'admin-order-report' %}" class="btn btn-info">View Report</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card border">
+                            <div class="card-body text-center">
+                                <i class="bi bi-currency-rupee fs-1 text-success mb-3"></i>
+                                <h5>Financial Report</h5>
+                                <p class="text-muted">Payment analytics, revenue tracking, and financial insights</p>
+                                <a href="{% url 'admin-financial-report' %}" class="btn btn-success">View Report</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

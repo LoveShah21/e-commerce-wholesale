@@ -2,6 +2,53 @@ from rest_framework import serializers
 from .models import Order, OrderItem, Cart, CartItem
 from apps.products.serializers import VariantSizeSerializer
 
+# Nested serializers for order tracking
+class CountrySerializer(serializers.Serializer):
+    country_name = serializers.CharField()
+
+class StateSerializer(serializers.Serializer):
+    state_name = serializers.CharField()
+    country = CountrySerializer()
+
+class CitySerializer(serializers.Serializer):
+    city_name = serializers.CharField()
+    state = StateSerializer()
+
+class PostalCodeSerializer(serializers.Serializer):
+    postal_code = serializers.CharField()
+    city = CitySerializer()
+
+class OrderAddressSerializer(serializers.Serializer):
+    """Enhanced address serializer for order tracking with nested structure"""
+    address_line_1 = serializers.CharField(source='address_line1')
+    address_line_2 = serializers.CharField(source='address_line2')
+    city = CitySerializer(source='postal_code.city')
+    state = StateSerializer(source='postal_code.city.state')
+    postal_code = PostalCodeSerializer()
+    country = CountrySerializer(source='postal_code.city.state.country')
+
+class ProductSerializer(serializers.Serializer):
+    product_name = serializers.CharField()
+
+class FabricSerializer(serializers.Serializer):
+    fabric_name = serializers.CharField()
+
+class ColorSerializer(serializers.Serializer):
+    color_name = serializers.CharField()
+
+class SizeSerializer(serializers.Serializer):
+    size_code = serializers.CharField()
+
+class VariantSerializer(serializers.Serializer):
+    product = ProductSerializer()
+    fabric = FabricSerializer()
+    color = ColorSerializer()
+
+class OrderVariantSizeSerializer(serializers.Serializer):
+    """Enhanced variant size serializer for order tracking"""
+    variant = VariantSerializer()
+    size = SizeSerializer()
+
 class CartItemSerializer(serializers.ModelSerializer):
     variant_details = VariantSizeSerializer(source='variant_size', read_only=True)
     
@@ -25,19 +72,29 @@ class CartSerializer(serializers.ModelSerializer):
         return total
 
 class OrderItemSerializer(serializers.ModelSerializer):
-    variant_details = VariantSizeSerializer(source='variant_size', read_only=True)
+    variant_size = OrderVariantSizeSerializer(read_only=True)
     
     class Meta:
         model = OrderItem
-        fields = ('id', 'variant_size', 'quantity', 'snapshot_unit_price', 'variant_details')
+        fields = ('id', 'variant_size', 'quantity', 'snapshot_unit_price')
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
+    delivery_address = OrderAddressSerializer(read_only=True)
+    total_amount = serializers.SerializerMethodField()
+    created_at = serializers.DateTimeField(source='order_date', read_only=True)
     
     class Meta:
         model = Order
-        fields = ('id', 'order_date', 'status', 'delivery_address', 'items', 'notes')
+        fields = ('id', 'created_at', 'order_date', 'status', 'delivery_address', 'items', 'notes', 'total_amount')
         read_only_fields = ('user', 'order_date', 'status')
+    
+    def get_total_amount(self, obj):
+        """Calculate total amount from order items"""
+        total = 0
+        for item in obj.items.all():
+            total += item.snapshot_unit_price * item.quantity
+        return total
 
 class OrderCreateSerializer(serializers.Serializer):
     delivery_address_id = serializers.IntegerField()

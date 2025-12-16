@@ -1,0 +1,203 @@
+{% extends 'base.html' %}
+
+{% block title %}Sales Report - Admin{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2><i class="bi bi-graph-up me-2"></i>Sales Report</h2>
+                <p class="text-muted">Detailed sales analytics and performance metrics</p>
+            </div>
+            <a href="{% url 'admin-reports-list' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Reports
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="get" action="{% url 'admin-sales-report' %}" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="start_date" class="form-label">Start Date</label>
+                        <input type="date" class="form-control" id="start_date" name="start_date" value="{{ start_date|date:'Y-m-d' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="end_date" class="form-label">End Date</label>
+                        <input type="date" class="form-control" id="end_date" name="end_date" value="{{ end_date|date:'Y-m-d' }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="status" class="form-label">Order Status</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="">All Statuses</option>
+                            {% for status_code, status_label in status_choices %}
+                            <option value="{{ status_code }}" {% if status_filter == status_code %}selected{% endif %}>
+                                {{ status_label }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="bi bi-search me-1"></i>Filter
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PDF Download Form -->
+<div class="row mb-4">
+    <div class="col-12">
+        <form method="post" action="{% url 'admin-sales-report' %}" class="d-inline">
+            {% csrf_token %}
+            <input type="hidden" name="start_date" value="{{ start_date|date:'Y-m-d' }}">
+            <input type="hidden" name="end_date" value="{{ end_date|date:'Y-m-d' }}">
+            <input type="hidden" name="status_filter" value="{{ status_filter }}">
+            <button type="submit" class="btn btn-success">
+                <i class="bi bi-download me-1"></i>Download PDF Report
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Summary Stats -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <h3>{{ total_orders }}</h3>
+                <p class="mb-0">Total Orders</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <h3>₹{{ total_revenue|floatformat:2 }}</h3>
+                <p class="mb-0">Total Revenue</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <h3>₹{{ avg_order_value|floatformat:2 }}</h3>
+                <p class="mb-0">Avg Order Value</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body text-center">
+                <h3>{{ status_breakdown|length }}</h3>
+                <p class="mb-0">Status Types</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Status Breakdown -->
+{% if status_breakdown %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-pie-chart me-2"></i>Order Status Breakdown</h5>
+            </div>
+            <div class="card-body">
+                {% for status, count in status_breakdown.items %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>{{ status }}</span>
+                    <span class="badge bg-secondary">{{ count }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-trophy me-2"></i>Top Products</h5>
+            </div>
+            <div class="card-body">
+                {% for product in top_products|slice:":5" %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>{{ product.variant_size__variant__product__product_name|truncatechars:30 }}</span>
+                    <span class="badge bg-primary">{{ product.total_quantity }} sold</span>
+                </div>
+                {% empty %}
+                <p class="text-muted">No products found for this period.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Orders Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-table me-2"></i>Order Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Date</th>
+                                <th>Customer</th>
+                                <th>Status</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order_data in orders_data %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'admin-order-detail' order_data.order.id %}" class="text-decoration-none">
+                                        #{{ order_data.order.id }}
+                                    </a>
+                                </td>
+                                <td>{{ order_data.order.order_date|date:"M d, Y" }}</td>
+                                <td>{{ order_data.order.user.full_name }}</td>
+                                <td>
+                                    <span class="badge 
+                                    {% if order_data.order.status == 'pending' %}bg-warning text-dark
+                                    {% elif order_data.order.status == 'confirmed' %}bg-info
+                                    {% elif order_data.order.status == 'processing' %}bg-primary
+                                    {% elif order_data.order.status == 'dispatched' %}bg-primary
+                                    {% elif order_data.order.status == 'delivered' %}bg-success
+                                    {% elif order_data.order.status == 'cancelled' %}bg-danger
+                                    {% else %}bg-secondary{% endif %}">
+                                        {{ order_data.order.status|title }}
+                                    </span>
+                                </td>
+                                <td>₹{{ order_data.total|floatformat:2 }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                    No orders found for the selected period.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

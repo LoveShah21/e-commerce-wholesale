@@ -181,10 +181,11 @@ class ManufacturingService:
     @staticmethod
     def get_reorder_alerts() -> List[Dict[str, Any]]:
         """
-        Get list of materials that are below their reorder level.
+        Get list of materials that are below their reorder level or out of stock.
         
-        Returns materials where current_quantity is below the reorder_level
-        defined in any MaterialSupplier relationship.
+        Returns materials where:
+        1. current_quantity <= 0 (out of stock), OR
+        2. current_quantity is below the reorder_level defined in MaterialSupplier relationship
         
         Returns:
             List of dictionaries containing:
@@ -197,16 +198,89 @@ class ManufacturingService:
         Validates: Requirements 10.4
         """
         alerts = []
+        processed_materials = set()
         
-        # Get all materials with supplier relationships
+        # First, get all materials that are out of stock (quantity <= 0)
+        out_of_stock_materials = RawMaterial.objects.filter(current_quantity__lte=0)
+        
+        for material in out_of_stock_materials:
+            if material.id in processed_materials:
+                continue
+                
+            # Get preferred supplier if exists
+            preferred_supplier = MaterialSupplier.objects.filter(
+                material=material,
+                is_preferred=True
+            ).select_related('supplier').first()
+            
+            alert = {
+                'material': material,
+                'material_id': material.id,
+                'material_name': material.material_name,
+                'current_quantity': material.current_quantity,
+                'reorder_level': 0,  # Out of stock
+                'shortage': abs(material.current_quantity),
+                'unit_price': material.unit_price,
+            }
+            
+            if preferred_supplier:
+                alert['preferred_supplier'] = {
+                    'supplier_id': preferred_supplier.supplier.id,
+                    'supplier_name': preferred_supplier.supplier.supplier_name,
+                    'supplier_price': preferred_supplier.supplier_price,
+                    'min_order_quantity': preferred_supplier.min_order_quantity,
+                    'lead_time_days': preferred_supplier.lead_time_days,
+                }
+            else:
+                alert['preferred_supplier'] = None
+            
+            alerts.append(alert)
+            processed_materials.add(material.id)
+        
+        # Then, get materials with default reorder levels that are below threshold
+        materials_with_default_reorder = RawMaterial.objects.filter(
+            default_reorder_level__isnull=False
+        ).exclude(id__in=processed_materials)
+        
+        for material in materials_with_default_reorder:
+            # Check if below default reorder level (but not out of stock, as that's handled above)
+            if material.current_quantity > 0 and material.current_quantity < material.default_reorder_level:
+                # Get preferred supplier if exists
+                preferred_supplier = MaterialSupplier.objects.filter(
+                    material=material,
+                    is_preferred=True
+                ).select_related('supplier').first()
+                
+                alert = {
+                    'material': material,
+                    'material_id': material.id,
+                    'material_name': material.material_name,
+                    'current_quantity': material.current_quantity,
+                    'reorder_level': material.default_reorder_level,
+                    'shortage': material.default_reorder_level - material.current_quantity,
+                    'unit_price': material.unit_price,
+                }
+                
+                if preferred_supplier:
+                    alert['preferred_supplier'] = {
+                        'supplier_id': preferred_supplier.supplier.id,
+                        'supplier_name': preferred_supplier.supplier.supplier_name,
+                        'supplier_price': preferred_supplier.supplier_price,
+                        'min_order_quantity': preferred_supplier.min_order_quantity,
+                        'lead_time_days': preferred_supplier.lead_time_days,
+                    }
+                else:
+                    alert['preferred_supplier'] = None
+                
+                alerts.append(alert)
+                processed_materials.add(material.id)
+        
+        # Finally, get materials with supplier relationships that are below reorder level
         material_suppliers = MaterialSupplier.objects.select_related(
             'material', 'supplier'
         ).filter(
             reorder_level__isnull=False
         )
-        
-        # Track materials we've already processed
-        processed_materials = set()
         
         for ms in material_suppliers:
             material = ms.material
@@ -215,8 +289,8 @@ class ManufacturingService:
             if material.id in processed_materials:
                 continue
             
-            # Check if below reorder level
-            if material.current_quantity < ms.reorder_level:
+            # Check if below reorder level (but not out of stock, as that's handled above)
+            if material.current_quantity > 0 and material.current_quantity < ms.reorder_level:
                 # Get preferred supplier if exists
                 preferred_supplier = MaterialSupplier.objects.filter(
                     material=material,

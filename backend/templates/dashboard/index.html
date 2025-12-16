@@ -136,7 +136,7 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <h6 class="card-title text-uppercase mb-1">Low Stock Items</h6>
-                        <h3 class="mb-0" id="lowStockCount">{{ low_stock_items|length }}</h3>
+                        <h3 class="mb-0" id="lowStockCount">{{ low_stock_count|default:0 }}</h3>
                     </div>
                     <i class="bi bi-exclamation-triangle metric-icon"></i>
                 </div>
@@ -170,18 +170,23 @@
             </div>
             <div class="card-body p-0" style="max-height: 400px; overflow-y: auto;">
                 <ul class="list-group list-group-flush" id="lowStockList">
-                    {% for stock in low_stock_items %}
+                    {% for item in low_stock_items %}
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         <div>
-                            <strong>{{ stock.variant_size.variant.product.product_name }}</strong>
+                            <strong>{{ item.name }}</strong>
                             <br>
                             <small class="text-muted">
-                                {{ stock.variant_size.variant.color.color_name }} -
-                                {{ stock.variant_size.size.size_code }}
+                                {% if item.type == 'product' %}
+                                    <i class="bi bi-box me-1"></i>Product - {{ item.variant }}
+                                {% else %}
+                                    <i class="bi bi-tools me-1"></i>Raw Material - {{ item.variant }}
+                                {% endif %}
                             </small>
+                            <br>
+                            <small class="text-warning">Threshold: {{ item.threshold }}</small>
                         </div>
                         <span class="badge bg-danger rounded-pill low-stock-badge">
-                            {{ stock.quantity_in_stock }} units
+                            {{ item.current_stock }} units
                         </span>
                     </li>
                     {% empty %}
@@ -259,6 +264,9 @@
 
     // Initialize chart with initial data
     document.addEventListener('DOMContentLoaded', function () {
+        // Initialize empty chart first
+        initializeEmptyChart();
+        
         // Fetch initial data and render chart
         fetchDashboardData();
 
@@ -269,6 +277,48 @@
         });
     });
 
+    function initializeEmptyChart() {
+        const ctx = document.getElementById('salesTrendChart').getContext('2d');
+        
+        // Create empty chart with placeholder data
+        salesChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Loading...'],
+                datasets: [{
+                    label: 'Sales (₹)',
+                    data: [0],
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function (value) {
+                                return '₹' + value.toFixed(0);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
     function fetchDashboardData() {
         const form = document.getElementById('dateFilterForm');
         const formData = new FormData(form);
@@ -278,12 +328,18 @@
         document.getElementById('loadingSpinner').classList.remove('d-none');
 
         fetch(`/api/dashboard/stats/?${params.toString()}`)
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
+                console.log('Dashboard data received:', data); // Debug log
                 updateMetrics(data);
-                updateSalesChart(data.sales_trend);
-                updateLowStockList(data.low_stock_details);
-                updateRecentOrders(data.recent_orders);
+                updateSalesChart(data.sales_trend || []);
+                updateLowStockList(data.low_stock_details || []);
+                updateRecentOrders(data.recent_orders || []);
             })
             .catch(error => {
                 console.error('Error fetching dashboard data:', error);
@@ -373,18 +429,27 @@
             return;
         }
 
-        list.innerHTML = lowStockDetails.map(item => `
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                <div>
-                    <strong>${item.variant_size__variant__product__product_name}</strong>
-                    <br>
-                    <small class="text-muted">Size: ${item.variant_size__size__size_code}</small>
-                </div>
-                <span class="badge bg-danger rounded-pill low-stock-badge">
-                    ${item.quantity_in_stock} units
-                </span>
-            </li>
-        `).join('');
+        list.innerHTML = lowStockDetails.map(item => {
+            const typeIcon = item.type === 'product' ? 'bi-box' : 'bi-tools';
+            const typeLabel = item.type === 'product' ? 'Product' : 'Raw Material';
+            
+            return `
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${item.name}</strong>
+                        <br>
+                        <small class="text-muted">
+                            <i class="bi ${typeIcon} me-1"></i>${typeLabel} - ${item.variant}
+                        </small>
+                        <br>
+                        <small class="text-warning">Threshold: ${item.threshold}</small>
+                    </div>
+                    <span class="badge bg-danger rounded-pill low-stock-badge">
+                        ${item.current_stock} units
+                    </span>
+                </li>
+            `;
+        }).join('');
     }
 
     function updateRecentOrders(recentOrders) {

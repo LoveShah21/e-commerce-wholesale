@@ -209,16 +209,13 @@
                                     </div>
                                     <div class="col-md-3">
                                         <strong>Total per unit:</strong>
-                                        <p class="mb-0">₹{{
-                                            price.unit_price|add:price.customization_charge_per_unit|floatformat:2 }}
-                                        </p>
+                                        <p class="mb-0">₹{{ price.unit_price|add:price.customization_charge_per_unit|floatformat:2 }}</p>
                                     </div>
                                 </div>
                                 <div class="row mt-2">
                                     <div class="col-md-6">
                                         <small class="text-muted">
-                                            Valid: {{ price.valid_from|date:"M d, Y" }} - {{ price.valid_until|date:"M
-                                            d, Y" }}
+                                            Valid: {{ price.valid_from|date:"M d, Y" }} - {{ price.valid_until|date:"M d, Y" }}
                                         </small>
                                     </div>
                                     <div class="col-md-6 text-end">
@@ -332,7 +329,7 @@
                     product.variants.forEach(variant => {
                         const option = document.createElement('option');
                         option.value = variant.id;
-                        option.textContent = `${variant.fabric.fabric_name} - ${variant.color.color_name} - ${variant.pattern.pattern_name}`;
+                        option.textContent = `${variant.fabric_name} - ${variant.color_name} - ${variant.pattern_name}`;
                         option.dataset.variant = JSON.stringify(variant);
                         variantSelect.appendChild(option);
                     });
@@ -360,11 +357,11 @@
 
         const variant = JSON.parse(selectedOption.dataset.variant);
 
-        if (variant.variant_sizes && variant.variant_sizes.length > 0) {
-            variant.variant_sizes.forEach(variantSize => {
+        if (variant.sizes && variant.sizes.length > 0) {
+            variant.sizes.forEach(variantSize => {
                 const option = document.createElement('option');
                 option.value = variantSize.id;
-                option.textContent = variantSize.size.size_name;
+                option.textContent = variantSize.size_name;
                 sizeSelect.appendChild(option);
             });
         } else {
