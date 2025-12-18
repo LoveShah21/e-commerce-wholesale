@@ -96,4 +96,217 @@
         </div>
     </div>
 </div>
+
+<!-- Feedback Modal -->
+<div class="modal fade" id="feedbackModal" tabindex="-1" aria-labelledby="feedbackModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="feedbackModalLabel">
+                    <i class="bi bi-star-fill me-2"></i>Share Your Feedback
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted mb-4">
+                    Thank you for your payment! We'd love to hear about your experience so far.
+                </p>
+
+                <form id="feedbackForm">
+                    <div class="mb-4">
+                        <label class="form-label">
+                            How would you rate your experience? <span class="text-danger">*</span>
+                        </label>
+                        <div class="rating-stars text-center mb-2">
+                            <i class="bi bi-star rating-star" data-rating="1" style="font-size: 2rem; cursor: pointer; color: #ddd;"></i>
+                            <i class="bi bi-star rating-star" data-rating="2" style="font-size: 2rem; cursor: pointer; color: #ddd;"></i>
+                            <i class="bi bi-star rating-star" data-rating="3" style="font-size: 2rem; cursor: pointer; color: #ddd;"></i>
+                            <i class="bi bi-star rating-star" data-rating="4" style="font-size: 2rem; cursor: pointer; color: #ddd;"></i>
+                            <i class="bi bi-star rating-star" data-rating="5" style="font-size: 2rem; cursor: pointer; color: #ddd;"></i>
+                        </div>
+                        <div class="text-center">
+                            <small class="text-muted" id="ratingText">Click to rate</small>
+                        </div>
+                        <input type="hidden" id="rating" name="rating" required>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="feedbackDescription" class="form-label">
+                            Tell us more <span class="text-muted">(Optional)</span>
+                        </label>
+                        <textarea class="form-control" id="feedbackDescription" rows="4"
+                            placeholder="Share your thoughts about the ordering process, product selection, or any suggestions..."></textarea>
+                    </div>
+
+                    <div class="alert alert-info" role="alert">
+                        <small>
+                            <i class="bi bi-info-circle me-1"></i>
+                            Your feedback helps us improve our service and products.
+                        </small>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success" id="submitFeedbackBtn">
+                            <i class="bi bi-send me-2"></i>Submit Feedback
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            Skip for Now
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Check if we should show feedback modal
+    {% if show_feedback_modal and order %}
+    document.addEventListener('DOMContentLoaded', function() {
+        // Wait a bit for the success message to be seen
+        setTimeout(function() {
+            const feedbackModal = new bootstrap.Modal(document.getElementById('feedbackModal'));
+            feedbackModal.show();
+        }, 2000);
+    });
+    {% endif %}
+
+    // Rating stars functionality
+    const ratingStars = document.querySelectorAll('.rating-star');
+    const ratingInput = document.getElementById('rating');
+    const ratingText = document.getElementById('ratingText');
+    let selectedRating = 0;
+
+    const ratingLabels = {
+        1: 'Poor',
+        2: 'Fair',
+        3: 'Good',
+        4: 'Very Good',
+        5: 'Excellent'
+    };
+
+    ratingStars.forEach(star => {
+        star.addEventListener('click', function() {
+            selectedRating = parseInt(this.getAttribute('data-rating'));
+            ratingInput.value = selectedRating;
+            updateStars(selectedRating);
+            ratingText.textContent = ratingLabels[selectedRating];
+        });
+
+        star.addEventListener('mouseenter', function() {
+            const rating = parseInt(this.getAttribute('data-rating'));
+            updateStars(rating, true);
+        });
+    });
+
+    document.querySelector('.rating-stars').addEventListener('mouseleave', function() {
+        updateStars(selectedRating);
+    });
+
+    function updateStars(rating, isHover = false) {
+        ratingStars.forEach((star, index) => {
+            if (index < rating) {
+                star.classList.remove('bi-star');
+                star.classList.add('bi-star-fill');
+                star.style.color = isHover && !selectedRating ? '#ffc107' : '#ffc107';
+            } else {
+                star.classList.remove('bi-star-fill');
+                star.classList.add('bi-star');
+                star.style.color = '#ddd';
+            }
+        });
+    }
+
+    // Handle feedback form submission
+    document.getElementById('feedbackForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const rating = document.getElementById('rating').value;
+        const description = document.getElementById('feedbackDescription').value;
+
+        if (!rating) {
+            alert('Please select a rating');
+            return;
+        }
+
+        {% if order %}
+        const orderId = {{ order.id }};
+        {% else %}
+        const orderId = null;
+        {% endif %}
+
+        if (!orderId) {
+            alert('Order information not available');
+            return;
+        }
+
+        // Show loading state
+        const submitBtn = document.getElementById('submitFeedbackBtn');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Submitting...';
+        submitBtn.disabled = true;
+
+        // Submit feedback
+        fetch('/api/support/feedback/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                order: orderId,
+                rating: parseInt(rating),
+                feedback_description: description || ''
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to submit feedback');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Show success message
+            if (typeof VaitikanApp !== 'undefined' && VaitikanApp.showToast) {
+                VaitikanApp.showToast('Thank you for your feedback!', 'success');
+            } else {
+                alert('Thank you for your feedback!');
+            }
+
+            // Close modal
+            const feedbackModal = bootstrap.Modal.getInstance(document.getElementById('feedbackModal'));
+            feedbackModal.hide();
+        })
+        .catch(error => {
+            console.error('Error submitting feedback:', error);
+            if (typeof VaitikanApp !== 'undefined' && VaitikanApp.showToast) {
+                VaitikanApp.showToast('Failed to submit feedback. Please try again.', 'error');
+            } else {
+                alert('Failed to submit feedback. Please try again.');
+            }
+        })
+        .finally(() => {
+            // Restore button state
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        });
+    });
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
 {% endblock %}

@@ -47,7 +47,7 @@ class InquiryDetailView(generics.RetrieveAPIView):
         base_queryset = Inquiry.objects.all().select_related('user').prefetch_related(
             'quotation_requests__variant_size__variant__product',
             'quotation_requests__variant_size__size',
-            'quotation_requests__quotation_price'
+            'quotation_requests__prices'
         )
         if user.user_type == 'admin':
             return base_queryset
@@ -80,7 +80,7 @@ class QuotationRequestDetailView(generics.RetrieveAPIView):
             'variant_size__variant',
             'variant_size__variant__product',
             'variant_size__size'
-        ).prefetch_related('quotation_price')
+        ).prefetch_related('prices')
 
 class QuotationPriceCreateView(generics.CreateAPIView):
     serializer_class = QuotationPriceCreateSerializer
@@ -114,10 +114,22 @@ class QuotationPriceSendView(APIView):
         quotation_price.status = 'sent'
         quotation_price.save()
         
-        # TODO: Send notification to customer (email/SMS)
+        # Send email notification to customer
+        try:
+            from services.email_service import EmailService
+            email_result = EmailService.send_quotation_notification(pk)
+            email_sent = email_result['success']
+            email_message = email_result['message']
+        except Exception as e:
+            email_sent = False
+            email_message = 'Email service unavailable'
+        
+        response_data = QuotationPriceSerializer(quotation_price).data
+        response_data['email_sent'] = email_sent
+        response_data['email_message'] = email_message
         
         return Response(
-            QuotationPriceSerializer(quotation_price).data,
+            response_data,
             status=status.HTTP_200_OK
         )
 
@@ -156,6 +168,39 @@ class QuotationPriceAcceptRejectView(APIView):
         if action == 'accept':
             quotation_price.status = 'accepted'
             quotation_price.quotation.status = 'accepted'
+            
+            # Auto-reject all other quotations for this inquiry
+            inquiry = quotation_price.quotation.inquiry
+            other_quotations = QuotationRequest.objects.filter(
+                inquiry=inquiry
+            ).exclude(id=quotation_price.quotation.id)
+            
+            # Log the auto-rejection process
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"Auto-rejecting {other_quotations.count()} other quotations for inquiry {inquiry.id}")
+            
+            # Reject all other quotation requests and their prices
+            for other_quotation in other_quotations:
+                if other_quotation.status not in ['accepted', 'rejected']:
+                    old_status = other_quotation.status
+                    other_quotation.status = 'rejected'
+                    other_quotation.save()
+                    logger.info(f"Quotation request {other_quotation.id} status changed from {old_status} to rejected")
+                
+                # Reject all prices for this quotation request
+                other_prices = other_quotation.prices.filter(
+                    status__in=['pending', 'sent']
+                )
+                rejected_count = other_prices.update(status='rejected')
+                if rejected_count > 0:
+                    logger.info(f"Rejected {rejected_count} prices for quotation request {other_quotation.id}")
+            
+            # Update inquiry status to accepted
+            inquiry.status = 'accepted'
+            inquiry.save()
+            logger.info(f"Inquiry {inquiry.id} status updated to accepted")
+            
         else:
             quotation_price.status = 'rejected'
             quotation_price.quotation.status = 'rejected'
@@ -163,8 +208,25 @@ class QuotationPriceAcceptRejectView(APIView):
         quotation_price.save()
         quotation_price.quotation.save()
         
+        # Return response with inquiry ID for frontend convenience
+        response_data = QuotationPriceSerializer(quotation_price).data
+        response_data['inquiry_id'] = quotation_price.quotation.inquiry.id
+        
+        # Add message about auto-rejection if accepted
+        if action == 'accept':
+            other_quotations_count = QuotationRequest.objects.filter(
+                inquiry=quotation_price.quotation.inquiry
+            ).exclude(id=quotation_price.quotation.id).count()
+            
+            if other_quotations_count > 0:
+                response_data['message'] = f'Quotation accepted successfully! {other_quotations_count} other quotation(s) have been automatically rejected.'
+            else:
+                response_data['message'] = 'Quotation accepted successfully!'
+        else:
+            response_data['message'] = 'Quotation rejected successfully!'
+        
         return Response(
-            QuotationPriceSerializer(quotation_price).data,
+            response_data,
             status=status.HTTP_200_OK
         )
 
@@ -182,9 +244,18 @@ class ComplaintListCreateView(generics.ListCreateAPIView):
         """
         user = self.request.user
         base_queryset = Complaint.objects.all().select_related('user', 'order')
+        
         if user.user_type == 'admin':
-            return base_queryset.order_by('-complaint_date')
-        return base_queryset.filter(user=user).order_by('-complaint_date')
+            queryset = base_queryset.order_by('-complaint_date')
+        else:
+            queryset = base_queryset.filter(user=user).order_by('-complaint_date')
+        
+        # Filter by order_id if provided
+        order_id = self.request.query_params.get('order_id')
+        if order_id:
+            queryset = queryset.filter(order_id=order_id)
+            
+        return queryset
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -229,8 +300,27 @@ class ComplaintStatusUpdateView(APIView):
         
         complaint.save()
         
+        # Send email notification to customer
+        try:
+            from services.email_service import EmailService
+            email_result = EmailService.send_complaint_status_notification(complaint.id)
+            
+            if not email_result['success']:
+                # Log email failure but don't fail the request
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Failed to send complaint status email for complaint {complaint.id}: {email_result['message']}")
+        except Exception as e:
+            # Log email failure but don't fail the request
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Exception sending complaint status email for complaint {complaint.id}: {str(e)}")
+        
+        response_data = ComplaintDetailSerializer(complaint).data
+        response_data['email_sent'] = email_result.get('success', False) if 'email_result' in locals() else False
+        
         return Response(
-            ComplaintDetailSerializer(complaint).data,
+            response_data,
             status=status.HTTP_200_OK
         )
 

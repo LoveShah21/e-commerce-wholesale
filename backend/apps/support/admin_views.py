@@ -168,9 +168,17 @@ class AdminQuotationPriceSendView(AdminRequiredMixin, View):
             quotation_price.status = 'sent'
             quotation_price.save()
             
-            # TODO: Send notification to customer (email/SMS)
-            
-            messages.success(request, 'Quotation sent to customer successfully!')
+            # Send email notification to customer
+            try:
+                from services.email_service import EmailService
+                email_result = EmailService.send_quotation_notification(quotation_price_id)
+                
+                if email_result['success']:
+                    messages.success(request, 'Quotation sent to customer successfully! Email notification has been sent.')
+                else:
+                    messages.warning(request, f'Quotation sent successfully, but email notification failed. Please contact the customer directly.')
+            except Exception as e:
+                messages.warning(request, 'Quotation sent successfully, but email notification failed. Please contact the customer directly.')
             
         except Exception as e:
             messages.error(request, f'Error sending quotation: {str(e)}')
@@ -282,7 +290,17 @@ class AdminComplaintResolveView(AdminRequiredMixin, View):
             
             complaint.save()
             
-            messages.success(request, f'Complaint status updated to {new_status}!')
+            # Send email notification to customer
+            try:
+                from services.email_service import EmailService
+                email_result = EmailService.send_complaint_status_notification(complaint.id)
+                
+                if email_result['success']:
+                    messages.success(request, f'Complaint status updated to {new_status}! Customer has been notified via email.')
+                else:
+                    messages.warning(request, f'Complaint status updated to {new_status}, but email notification failed.')
+            except Exception as email_error:
+                messages.warning(request, f'Complaint status updated to {new_status}, but email notification failed.')
             
         except Exception as e:
             messages.error(request, f'Error updating complaint: {str(e)}')

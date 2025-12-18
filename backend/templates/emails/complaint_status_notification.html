@@ -1,0 +1,81 @@
+{% extends 'emails/base_email.html' %}
+
+{% block title %}Complaint Update - {{ company_name }}{% endblock %}
+
+{% block content %}
+<div class="greeting">
+    Dear {{ customer_name }},
+</div>
+
+<p>We have an update regarding your complaint with us.</p>
+
+<div class="order-info">
+    <h3>📋 Complaint Details</h3>
+    <p><strong>Complaint ID:</strong> #{{ complaint.id }}</p>
+    <p><strong>Submitted:</strong> {{ complaint.complaint_date|date:"F d, Y" }}</p>
+    <p><strong>Category:</strong> {{ complaint.complaint_category }}</p>
+    {% if complaint.order %}
+    <p><strong>Related Order:</strong> #{{ complaint.order.id }}</p>
+    {% endif %}
+    <p><strong>Current Status:</strong> 
+        <span style="font-weight: bold; color: 
+            {% if complaint.status == 'resolved' %}#28a745
+            {% elif complaint.status == 'in_progress' %}#17a2b8
+            {% elif complaint.status == 'closed' %}#6c757d
+            {% else %}#ffc107{% endif %};">
+            {% if complaint.status == 'in_progress' %}In Progress{% else %}{{ complaint.status|title }}{% endif %}
+        </span>
+    </p>
+</div>
+
+<div class="order-info">
+    <h3>📝 Your Complaint</h3>
+    <p>{{ complaint.complaint_description }}</p>
+</div>
+
+{% if complaint.resolution_notes %}
+<div class="order-info">
+    <h3>💬 Our Response</h3>
+    <p>{{ complaint.resolution_notes }}</p>
+    {% if complaint.resolution_date %}
+    <p><small><strong>Updated on:</strong> {{ complaint.resolution_date|date:"F d, Y at g:i A" }}</small></p>
+    {% endif %}
+</div>
+{% endif %}
+
+{% if complaint.status == 'resolved' %}
+<div class="important-note">
+    <p class="icon">✅ Good News!</p>
+    <p>Your complaint has been <strong>resolved</strong>. We hope our solution meets your expectations. If you have any further concerns, please don't hesitate to contact us.</p>
+</div>
+{% elif complaint.status == 'in_progress' %}
+<div class="important-note">
+    <p class="icon">🔄 Update:</p>
+    <p>Your complaint is currently <strong>being processed</strong>. Our team is working on resolving your issue. We'll keep you updated on the progress.</p>
+</div>
+{% elif complaint.status == 'closed' %}
+<div class="important-note">
+    <p class="icon">📁 Status:</p>
+    <p>Your complaint has been <strong>closed</strong>. If you need to reopen this issue or have new concerns, please contact our support team.</p>
+</div>
+{% endif %}
+
+<div style="text-align: center; margin: 30px 0;">
+    <a href="{{ complaints_url }}" class="btn btn-success">
+        📋 View All My Complaints
+    </a>
+    {% if order_url %}
+    <br><br>
+    <a href="{{ order_url }}" class="btn">
+        📦 View Related Order
+    </a>
+    {% endif %}
+</div>
+
+<p>Thank you for bringing this to our attention. Your feedback helps us improve our service quality.</p>
+
+<p>If you have any questions or need further assistance, please feel free to contact our support team.</p>
+
+<p>Best regards,<br>
+The {{ company_name }} Support Team</p>
+{% endblock %}

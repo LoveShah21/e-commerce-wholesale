@@ -1,0 +1,50 @@
+{% extends 'emails/base_email.html' %}
+
+{% block title %}Quotation Ready - {{ company_name }}{% endblock %}
+
+{% block content %}
+<div class="greeting">
+    Dear {{ customer_name }},
+</div>
+
+<p>Great news! We have prepared a quotation for your inquiry.</p>
+
+<div class="order-info">
+    <h3>📋 Inquiry Details</h3>
+    <p><strong>Inquiry ID:</strong> #{{ inquiry.id }}</p>
+    <p><strong>Submitted:</strong> {{ inquiry.inquiry_date|date:"F d, Y" }}</p>
+    <p><strong>Description:</strong> {{ inquiry.inquiry_description|truncatewords:30 }}</p>
+</div>
+
+<div class="order-info">
+    <h3>💰 Quotation Summary</h3>
+    <p><strong>Product:</strong> {{ quotation_price.quotation.variant_size.variant.product.name }}</p>
+    <p><strong>Size:</strong> {{ quotation_price.quotation.variant_size.size.name }}</p>
+    <p><strong>Quantity:</strong> {{ quotation_price.quoted_quantity }} pieces</p>
+    <p><strong>Unit Price:</strong> ₹{{ quotation_price.unit_price }}</p>
+    {% if quotation_price.customization_charge_per_unit > 0 %}
+    <p><strong>Customization Charge:</strong> ₹{{ quotation_price.customization_charge_per_unit }} per unit</p>
+    {% endif %}
+    <hr>
+    <p><strong>Total Amount:</strong> <span style="font-size: 18px; color: #28a745; font-weight: bold;">₹{{ total_price }}</span></p>
+    <p><strong>Valid Until:</strong> {{ quotation_price.valid_until|date:"F d, Y" }}</p>
+</div>
+
+<div class="important-note">
+    <p class="icon">⏰ Important:</p>
+    <p>This quotation is valid until <strong>{{ quotation_price.valid_until|date:"F d, Y" }}</strong>. Please review and respond before the expiry date.</p>
+</div>
+
+<div style="text-align: center; margin: 30px 0;">
+    <a href="{{ inquiries_url }}" class="btn btn-success">
+        📋 View Full Details & Respond
+    </a>
+</div>
+
+<p>You can accept or reject this quotation by visiting your inquiries page. If you have any questions about the quotation, please don't hesitate to contact us.</p>
+
+<p>Thank you for choosing {{ company_name }} for your custom shirt needs!</p>
+
+<p>Best regards,<br>
+The {{ company_name }} Team</p>
+{% endblock %}

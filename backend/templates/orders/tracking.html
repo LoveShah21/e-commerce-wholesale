@@ -79,7 +79,7 @@
         </div>
 
         <!-- Payment Information -->
-        <div class="card shadow-sm">
+        <div class="card shadow-sm mb-4">
             <div class="card-header bg-warning text-dark">
                 <h5 class="mb-0"><i class="bi bi-credit-card me-2"></i>Payment</h5>
             </div>
@@ -88,6 +88,69 @@
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Loading...</span>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Complaint Section -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Need Help?</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">Having issues with your order? Let us know and we'll help resolve it quickly.</p>
+                
+                <!-- Existing Complaints -->
+                <div id="existingComplaints" style="display: none;">
+                    <h6 class="mb-3">Your Complaints</h6>
+                    <div id="complaintsContainer"></div>
+                    <hr>
+                </div>
+
+                <!-- Complaint Form -->
+                <div id="complaintFormContainer">
+                    <button class="btn btn-outline-danger w-100" onclick="showComplaintForm()">
+                        <i class="bi bi-plus-circle me-2"></i>Report an Issue
+                    </button>
+                    
+                    <div id="complaintForm" style="display: none;" class="mt-3">
+                        <form id="submitComplaintForm">
+                            <div class="mb-3">
+                                <label for="complaintCategory" class="form-label">Issue Category</label>
+                                <select class="form-select" id="complaintCategory" required>
+                                    <option value="">Select category...</option>
+                                    <option value="Quality Issue">Quality Issue</option>
+                                    <option value="Delivery Delay">Delivery Delay</option>
+                                    <option value="Wrong Item">Wrong Item Received</option>
+                                    <option value="Damaged Item">Damaged Item</option>
+                                    <option value="Size Issue">Size Issue</option>
+                                    <option value="Color Issue">Color Issue</option>
+                                    <option value="Customer Service">Customer Service</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="complaintDescription" class="form-label">Describe the Issue</label>
+                                <textarea class="form-control" id="complaintDescription" rows="4" 
+                                    placeholder="Please provide details about the issue you're experiencing..." required></textarea>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="bi bi-send me-2"></i>Submit Complaint
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="hideComplaintForm()">
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- View All Complaints Link -->
+                <div class="mt-3 text-center">
+                    <a href="/complaints/" class="btn btn-link">
+                        <i class="bi bi-list-ul me-1"></i>View All My Complaints
+                    </a>
                 </div>
             </div>
         </div>
@@ -103,6 +166,7 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         loadOrderDetails();
+        loadOrderComplaints();
     });
 
     function loadOrderDetails() {
@@ -355,6 +419,141 @@
             `;
             });
     }
+
+    function loadOrderComplaints() {
+        fetch(`/api/support/complaints/?order_id=${orderId}`, {
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(complaints => {
+            if (complaints.length > 0) {
+                renderExistingComplaints(complaints);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading complaints:', error);
+        });
+    }
+
+    function renderExistingComplaints(complaints) {
+        const container = document.getElementById('complaintsContainer');
+        const existingSection = document.getElementById('existingComplaints');
+        
+        let html = '';
+        complaints.forEach(complaint => {
+            const statusBadge = {
+                'open': 'bg-warning text-dark',
+                'in_progress': 'bg-info',
+                'resolved': 'bg-success',
+                'closed': 'bg-secondary'
+            }[complaint.status] || 'bg-secondary';
+
+            const date = new Date(complaint.complaint_date).toLocaleDateString('en-IN');
+
+            html += `
+                <div class="card mb-2">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="mb-0">Complaint #${complaint.id}</h6>
+                            <span class="badge ${statusBadge}">${complaint.status.replace('_', ' ').toUpperCase()}</span>
+                        </div>
+                        <p class="text-muted mb-1"><strong>Category:</strong> ${complaint.complaint_category}</p>
+                        <p class="text-muted mb-1"><strong>Date:</strong> ${date}</p>
+                        <p class="mb-2">${complaint.complaint_description.substring(0, 100)}${complaint.complaint_description.length > 100 ? '...' : ''}</p>
+                        ${complaint.resolution_notes ? `
+                            <div class="alert alert-info p-2 mb-0">
+                                <small><strong>Resolution:</strong> ${complaint.resolution_notes}</small>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+        existingSection.style.display = 'block';
+    }
+
+    function showComplaintForm() {
+        document.getElementById('complaintForm').style.display = 'block';
+        document.querySelector('button[onclick="showComplaintForm()"]').style.display = 'none';
+    }
+
+    function hideComplaintForm() {
+        document.getElementById('complaintForm').style.display = 'none';
+        document.querySelector('button[onclick="showComplaintForm()"]').style.display = 'block';
+    }
+
+    // Handle complaint form submission
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('submitComplaintForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const category = document.getElementById('complaintCategory').value;
+            const description = document.getElementById('complaintDescription').value;
+            
+            if (!category || !description.trim()) {
+                alert('Please fill in all required fields.');
+                return;
+            }
+
+            // Show loading state
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Submitting...';
+            submitBtn.disabled = true;
+
+            // Submit complaint
+            fetch('/api/support/complaints/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    order: orderId,
+                    complaint_category: category,
+                    complaint_description: description
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to submit complaint');
+                }
+                return response.json();
+            })
+            .then(complaint => {
+                // Show success message
+                if (typeof VaitikanApp !== 'undefined' && VaitikanApp.showToast) {
+                    VaitikanApp.showToast('Complaint submitted successfully! We will review it shortly.', 'success');
+                } else {
+                    alert('Complaint submitted successfully! We will review it shortly.');
+                }
+                
+                // Reset form and hide it
+                this.reset();
+                hideComplaintForm();
+                
+                // Reload complaints
+                loadOrderComplaints();
+            })
+            .catch(error => {
+                console.error('Error submitting complaint:', error);
+                if (typeof VaitikanApp !== 'undefined' && VaitikanApp.showToast) {
+                    VaitikanApp.showToast('Failed to submit complaint. Please try again.', 'error');
+                } else {
+                    alert('Failed to submit complaint. Please try again.');
+                }
+            })
+            .finally(() => {
+                // Restore button state
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
+        });
+    });
 
     function getCookie(name) {
         let cookieValue = null;

@@ -13,3 +13,7 @@ class InquiryListView(LoginRequiredMixin, View):
 class FeedbackSubmissionView(LoginRequiredMixin, View):
     def get(self, request):
         return render(request, 'support/feedback.html')
+
+class ComplaintListView(LoginRequiredMixin, View):
+    def get(self, request):
+        return render(request, 'support/complaints_list.html')

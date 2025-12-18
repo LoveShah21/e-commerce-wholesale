@@ -247,6 +247,169 @@ class EmailService(BaseService):
             }
     
     @classmethod
+    def send_quotation_notification(
+        cls,
+        quotation_price_id: int
+    ) -> Dict[str, Any]:
+        """
+        Send quotation notification email to customer.
+        
+        Args:
+            quotation_price_id: The ID of the quotation price
+            
+        Returns:
+            A dictionary containing success status and message
+        """
+        cls.log_info(f"Sending quotation notification for quotation price {quotation_price_id}")
+        
+        try:
+            from apps.support.models import QuotationPrice
+            quotation_price = QuotationPrice.objects.select_related(
+                'quotation__inquiry__user',
+                'quotation__variant_size__variant__product',
+                'quotation__variant_size__size'
+            ).get(id=quotation_price_id)
+            
+            inquiry = quotation_price.quotation.inquiry
+            user = inquiry.user
+            
+            # Prepare email context
+            domain = settings.ALLOWED_HOSTS[0] if settings.ALLOWED_HOSTS else '127.0.0.1:8000'
+            total_price = (float(quotation_price.unit_price) + float(quotation_price.customization_charge_per_unit)) * quotation_price.quoted_quantity
+            
+            context = {
+                'inquiry': inquiry,
+                'quotation_price': quotation_price,
+                'customer_name': user.full_name or user.email,
+                'inquiry_id': inquiry.id,
+                'total_price': total_price,
+                'inquiries_url': f"http://{domain}/inquiries/",
+                'company_name': 'Vaitikan City',
+                'support_email': settings.DEFAULT_FROM_EMAIL,
+            }
+            
+            # Render email templates
+            html_content = render_to_string('emails/quotation_notification.html', context)
+            text_content = strip_tags(html_content)
+            
+            # Create email
+            subject = f'Quotation Ready - Inquiry #{inquiry.id}'
+            from_email = settings.DEFAULT_FROM_EMAIL
+            to_email = [user.email]
+            
+            # Send email
+            email = EmailMultiAlternatives(
+                subject=subject,
+                body=text_content,
+                from_email=from_email,
+                to=to_email
+            )
+            email.attach_alternative(html_content, "text/html")
+            
+            email.send()
+            
+            cls.log_info(f"Quotation notification sent to {user.email}")
+            
+            # Log email transaction
+            logger.info(
+                f"EMAIL_SENT | "
+                f"Type: quotation_notification | "
+                f"InquiryID: {inquiry.id} | "
+                f"Recipient: {user.email} | "
+                f"QuotationPriceID: {quotation_price_id}"
+            )
+            
+            return {
+                'success': True,
+                'message': 'Quotation notification sent successfully'
+            }
+            
+        except Exception as e:
+            cls.log_error(f"Failed to send quotation notification: {str(e)}", exc_info=True)
+            return {
+                'success': False,
+                'message': f'Failed to send email: {str(e)}'
+            }
+
+    @classmethod
+    def send_complaint_status_notification(
+        cls,
+        complaint_id: int
+    ) -> Dict[str, Any]:
+        """
+        Send complaint status update notification email to customer.
+        
+        Args:
+            complaint_id: The ID of the complaint
+            
+        Returns:
+            A dictionary containing success status and message
+        """
+        cls.log_info(f"Sending complaint status notification for complaint {complaint_id}")
+        
+        try:
+            from apps.support.models import Complaint
+            complaint = Complaint.objects.select_related('user', 'order').get(id=complaint_id)
+            
+            user = complaint.user
+            
+            # Prepare email context
+            domain = settings.ALLOWED_HOSTS[0] if settings.ALLOWED_HOSTS else '127.0.0.1:8000'
+            
+            context = {
+                'complaint': complaint,
+                'customer_name': user.full_name or user.email,
+                'complaint_id': complaint.id,
+                'complaints_url': f"http://{domain}/complaints/",
+                'order_url': f"http://{domain}/order-tracking/{complaint.order.id}/" if complaint.order else None,
+                'company_name': 'Vaitikan City',
+                'support_email': settings.DEFAULT_FROM_EMAIL,
+            }
+            
+            # Render email templates
+            html_content = render_to_string('emails/complaint_status_notification.html', context)
+            text_content = strip_tags(html_content)
+            
+            # Create email
+            subject = f'Complaint Update - Complaint #{complaint.id}'
+            from_email = settings.DEFAULT_FROM_EMAIL
+            to_email = [user.email]
+            
+            # Send email
+            email = EmailMultiAlternatives(
+                subject=subject,
+                body=text_content,
+                from_email=from_email,
+                to=to_email
+            )
+            email.attach_alternative(html_content, "text/html")
+            
+            email.send()
+            
+            cls.log_info(f"Complaint status notification sent to {user.email}")
+            
+            # Log email transaction
+            logger.info(
+                f"EMAIL_SENT | "
+                f"Type: complaint_status_notification | "
+                f"ComplaintID: {complaint.id} | "
+                f"Recipient: {user.email} | "
+                f"Status: {complaint.status}"
+            )
+            
+            return {
+                'success': True,
+                'message': 'Complaint status notification sent successfully'
+            }
+            
+        except Exception as e:
+            cls.log_error(f"Failed to send complaint status notification: {str(e)}", exc_info=True)
+            return {
+                'success': False,
+                'message': f'Failed to send email: {str(e)}'
+            }
+
+    @classmethod
     def send_custom_notification(
         cls,
         recipient_email: str,

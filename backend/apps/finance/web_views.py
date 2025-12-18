@@ -27,7 +27,8 @@ class PaymentSuccessView(LoginRequiredMixin, View):
         
         context = {
             'payment_id': payment_id,
-            'order_id': order_id
+            'order_id': order_id,
+            'show_feedback_modal': False
         }
         
         # Get payment details if payment_id provided
@@ -39,6 +40,17 @@ class PaymentSuccessView(LoginRequiredMixin, View):
                 )
                 context['payment'] = payment
                 context['order'] = payment.order
+                
+                # Check if we should show feedback modal
+                # Only for advance payments and if user hasn't given feedback yet
+                if payment.payment_type == 'advance':
+                    from apps.support.models import Feedback
+                    has_feedback = Feedback.objects.filter(
+                        order=payment.order,
+                        user=request.user
+                    ).exists()
+                    context['show_feedback_modal'] = not has_feedback
+                    
             except Payment.DoesNotExist:
                 messages.error(request, 'Payment not found')
         
@@ -56,6 +68,16 @@ class PaymentSuccessView(LoginRequiredMixin, View):
                 
                 if payment:
                     context['payment'] = payment
+                    
+                    # Check if we should show feedback modal
+                    if payment.payment_type == 'advance':
+                        from apps.support.models import Feedback
+                        has_feedback = Feedback.objects.filter(
+                            order=order,
+                            user=request.user
+                        ).exists()
+                        context['show_feedback_modal'] = not has_feedback
+                        
             except Order.DoesNotExist:
                 messages.error(request, 'Order not found')
         

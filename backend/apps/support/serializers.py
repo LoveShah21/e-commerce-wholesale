@@ -2,8 +2,22 @@ from rest_framework import serializers
 from .models import Inquiry, Complaint, Feedback, QuotationRequest, QuotationPrice
 from utils.security import validate_document_file, sanitize_filename
 
+class CloudinaryImageField(serializers.ImageField):
+    """Custom field to handle Cloudinary URLs properly"""
+    
+    def to_representation(self, value):
+        if not value:
+            return None
+        
+        # If it's a CloudinaryField, get the URL
+        if hasattr(value, 'url'):
+            return value.url
+        
+        # Fallback to string representation
+        return str(value)
+
 class InquirySerializer(serializers.ModelSerializer):
-    logo_file = serializers.ImageField(required=False, allow_null=True)
+    logo_file = CloudinaryImageField(required=False, allow_null=True)
     
     class Meta:
         model = Inquiry
@@ -25,10 +39,45 @@ class InquirySerializer(serializers.ModelSerializer):
             max_size = 5 * 1024 * 1024  # 5MB
             if value.size > max_size:
                 raise serializers.ValidationError(
-                    "File size too large. Maximum allowed size is 5
+                    "File size too large. Maximum allowed size is 5MB."
+                )
 
+# Define QuotationPrice serializer first
+class QuotationPriceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuotationPrice
+        fields = '__all__'
+        read_only_fields = ('quoted_date', 'status')
+
+class QuotationPriceCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuotationPrice
+        fields = ('quotation', 'unit_price', 'customization_charge_per_unit', 
+                  'quoted_quantity', 'valid_from', 'valid_until')
+
+# Define QuotationRequest serializers
+class QuotationRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuotationRequest
+        fields = '__all__'
+        read_only_fields = ('requested_date', 'status')
+
+class QuotationRequestDetailSerializer(serializers.ModelSerializer):
+    prices = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = QuotationRequest
+        fields = '__all__'
+        read_only_fields = ('requested_date', 'status')
+    
+    def get_prices(self, obj):
+        prices = obj.prices.all()
+        return QuotationPriceSerializer(prices, many=True).data
+
+# Now define InquiryDetailSerializer that uses QuotationRequestDetailSerializer
 class InquiryDetailSerializer(serializers.ModelSerializer):
     quotation_requests = serializers.SerializerMethodField()
+    logo_file = CloudinaryImageField(required=False, allow_null=True)
     
     class Meta:
         model = Inquiry
@@ -75,35 +124,7 @@ class FeedbackDetailSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ('user', 'feedback_date')
 
-class QuotationRequestSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = QuotationRequest
-        fields = '__all__'
-        read_only_fields = ('requested_date', 'status')
 
-class QuotationRequestDetailSerializer(serializers.ModelSerializer):
-    prices = serializers.SerializerMethodField()
-    
-    class Meta:
-        model = QuotationRequest
-        fields = '__all__'
-        read_only_fields = ('requested_date', 'status')
-    
-    def get_prices(self, obj):
-        prices = obj.prices.all()
-        return QuotationPriceSerializer(prices, many=True).data
-
-class QuotationPriceSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = QuotationPrice
-        fields = '__all__'
-        read_only_fields = ('quoted_date', 'status')
-
-class QuotationPriceCreateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = QuotationPrice
-        fields = ('quotation', 'unit_price', 'customization_charge_per_unit', 
-                  'quoted_quantity', 'valid_from', 'valid_until')
 
 class QuotationAcceptRejectSerializer(serializers.Serializer):
     action = serializers.ChoiceField(choices=['accept', 'reject'])

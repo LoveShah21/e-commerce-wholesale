@@ -42,6 +42,10 @@
                             <span class="badge bg-info">Reviewed</span>
                             {% elif inquiry.status == 'quoted' %}
                             <span class="badge bg-success">Quoted</span>
+                            {% elif inquiry.status == 'accepted' %}
+                            <span class="badge bg-primary">Accepted</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ inquiry.status|title }}</span>
                             {% endif %}
                         </p>
                     </div>

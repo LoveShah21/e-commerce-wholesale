@@ -23,7 +23,7 @@
                             <option value="">Loading orders...</option>
                         </select>
                         <div class="form-text">
-                            Select the order you want to provide feedback for
+                            Select a dispatched or delivered order to provide feedback for
                         </div>
                     </div>
 
@@ -132,13 +132,22 @@
             }
         })
             .then(response => response.json())
-            .then(orders => {
-                const deliveredOrders = orders.filter(order => order.status === 'delivered');
-                renderOrderOptions(deliveredOrders);
+            .then(data => {
+                // Handle paginated response
+                const orders = data.results || data; // Support both paginated and non-paginated
+                
+                // Allow feedback for dispatched and delivered orders
+                const eligibleOrders = orders.filter(order => 
+                    order.status === 'delivered' || order.status === 'dispatched'
+                );
+                renderOrderOptions(eligibleOrders);
             })
             .catch(error => {
                 console.error('Error loading orders:', error);
-                document.getElementById('orderId').innerHTML = '<option value="">No delivered orders found</option>';
+                document.getElementById('orderId').innerHTML = '<option value="">Error loading orders. Please refresh the page.</option>';
+                if (typeof VaitikanApp !== 'undefined' && VaitikanApp.showToast) {
+                    VaitikanApp.showToast('Failed to load orders. Please refresh the page.', 'error');
+                }
             });
     }
 
@@ -146,13 +155,15 @@
         const select = document.getElementById('orderId');
 
         if (!orders || orders.length === 0) {
-            select.innerHTML = '<option value="">No delivered orders available for feedback</option>';
+            select.innerHTML = '<option value="">No orders available for feedback</option>';
             return;
         }
 
         let html = '<option value="">Select an order...</option>';
         orders.forEach(order => {
-            const date = new Date(order.created_at).toLocaleDateString('en-IN', {
+            // Use order_date or created_at, whichever is available
+            const dateField = order.order_date || order.created_at;
+            const date = new Date(dateField).toLocaleDateString('en-IN', {
                 year: 'numeric',
                 month: 'short',
                 day: 'numeric'
@@ -178,7 +189,15 @@
             return;
         }
 
-        VaitikanApp.showLoading('Submitting your feedback...');
+        // Show loading state
+        const submitBtn = document.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Submitting...';
+        submitBtn.disabled = true;
+        
+        if (typeof VaitikanApp !== 'undefined' && VaitikanApp.showLoading) {
+            VaitikanApp.showLoading('Submitting your feedback...');
+        }
 
         const feedbackData = {
             order: parseInt(orderId),
@@ -201,15 +220,33 @@
                 return response.json();
             })
             .then(data => {
-                VaitikanApp.hideLoading();
-                VaitikanApp.showToast('Thank you for your feedback!', 'success');
+                // Hide loading and show success
+                if (typeof VaitikanApp !== 'undefined') {
+                    VaitikanApp.hideLoading();
+                    VaitikanApp.showToast('Thank you for your feedback!', 'success');
+                } else {
+                    alert('Thank you for your feedback!');
+                }
+                
+                // Reset form and reload feedback
                 document.getElementById('feedbackForm').reset();
                 loadPreviousFeedback();
             })
             .catch(error => {
-                VaitikanApp.hideLoading();
+                console.error('Feedback submission error:', error);
                 const message = error.detail || error.message || 'Failed to submit feedback';
-                VaitikanApp.showToast(message, 'error');
+                
+                if (typeof VaitikanApp !== 'undefined') {
+                    VaitikanApp.hideLoading();
+                    VaitikanApp.showToast(message, 'error');
+                } else {
+                    alert(message);
+                }
+            })
+            .finally(() => {
+                // Restore button state
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
             });
     }
 
@@ -220,13 +257,18 @@
             }
         })
             .then(response => response.json())
-            .then(feedbacks => {
+            .then(data => {
+                // Handle paginated response
+                const feedbacks = data.results || data; // Support both paginated and non-paginated
                 renderPreviousFeedback(feedbacks);
             })
             .catch(error => {
                 console.error('Error loading feedback:', error);
                 document.getElementById('previousFeedbackContainer').innerHTML = `
-            <p class="text-muted text-center mb-0">No previous feedback found.</p>
+            <div class="alert alert-warning mb-0" role="alert">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                Unable to load previous feedback. Please refresh the page.
+            </div>
         `;
             });
     }

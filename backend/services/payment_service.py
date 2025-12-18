@@ -233,6 +233,42 @@ class PaymentService(BaseService):
             return False
     
     @classmethod
+    def _get_payment_method_from_razorpay(cls, razorpay_payment_id: str) -> str:
+        """
+        Fetch payment details from Razorpay to get the actual payment method used.
+        
+        Args:
+            razorpay_payment_id: Razorpay payment ID
+            
+        Returns:
+            Payment method string ('upi', 'card', 'netbanking', 'wallet')
+        """
+        try:
+            client = cls._get_razorpay_client()
+            payment_details = client.payment.fetch(razorpay_payment_id)
+            
+            # Map Razorpay method to our choices
+            razorpay_method = payment_details.get('method', 'upi')
+            
+            method_mapping = {
+                'upi': 'upi',
+                'card': 'card',
+                'netbanking': 'netbanking',
+                'wallet': 'wallet',
+                'bank_transfer': 'netbanking',  # Map bank transfer to netbanking
+                'emi': 'card',  # Map EMI to card
+            }
+            
+            actual_method = method_mapping.get(razorpay_method, 'upi')
+            cls.log_info(f"Razorpay payment method: {razorpay_method} -> {actual_method}")
+            
+            return actual_method
+            
+        except Exception as e:
+            cls.log_warning(f"Failed to fetch payment method from Razorpay: {str(e)}")
+            return 'upi'  # Default fallback
+    
+    @classmethod
     def process_successful_payment(
         cls,
         payment_id: int,
@@ -282,9 +318,13 @@ class PaymentService(BaseService):
                 cls.log_error(f"Payment signature verification failed for payment {payment_id}")
                 raise ValidationError("Payment signature verification failed")
             
+            # Get actual payment method from Razorpay
+            actual_payment_method = cls._get_payment_method_from_razorpay(razorpay_payment_id)
+            
             # Update payment record
             payment.razorpay_payment_id = razorpay_payment_id
             payment.razorpay_signature = razorpay_signature
+            payment.payment_method = actual_payment_method  # Update with actual method used
             payment.payment_status = 'success'
             payment.paid_at = timezone.now()
             payment.save()
@@ -311,6 +351,19 @@ class PaymentService(BaseService):
                 order.status = 'confirmed'
                 order.save()
                 cls.log_info(f"Updated order {order.id} to confirmed")
+                
+                # Send order confirmation email
+                try:
+                    from services.email_service import EmailService
+                    email_result = EmailService.send_order_confirmation_email(order.id)
+                    if email_result['success']:
+                        cls.log_info(f"Order confirmation email sent for order {order.id}")
+                    else:
+                        cls.log_warning(f"Failed to send order confirmation email: {email_result['message']}")
+                except Exception as e:
+                    cls.log_error(f"Exception sending order confirmation email: {str(e)}")
+                    # Don't fail the payment if email fails
+                    
             elif payment.payment_type == 'final':
                 # Final payment successful - order can be dispatched
                 # Status update to dispatched should be done by admin
@@ -495,8 +548,21 @@ class PaymentService(BaseService):
             try:
                 payment = Payment.objects.get(razorpay_order_id=razorpay_order_id)
                 
+                # Get actual payment method from webhook data or fetch from Razorpay
+                webhook_method = payment_entity.get('method', 'upi')
+                method_mapping = {
+                    'upi': 'upi',
+                    'card': 'card',
+                    'netbanking': 'netbanking',
+                    'wallet': 'wallet',
+                    'bank_transfer': 'netbanking',
+                    'emi': 'card',
+                }
+                actual_payment_method = method_mapping.get(webhook_method, 'upi')
+                
                 # Update payment status
                 payment.razorpay_payment_id = razorpay_payment_id
+                payment.payment_method = actual_payment_method  # Update with actual method used
                 payment.payment_status = 'success'
                 payment.paid_at = timezone.now()
                 payment.save()
@@ -506,6 +572,17 @@ class PaymentService(BaseService):
                 if payment.payment_type == 'advance':
                     order.status = 'confirmed'
                     order.save()
+                    
+                    # Send order confirmation email
+                    try:
+                        from services.email_service import EmailService
+                        email_result = EmailService.send_order_confirmation_email(order.id)
+                        if email_result['success']:
+                            cls.log_info(f"Order confirmation email sent for order {order.id} via webhook")
+                        else:
+                            cls.log_warning(f"Failed to send order confirmation email via webhook: {email_result['message']}")
+                    except Exception as e:
+                        cls.log_error(f"Exception sending order confirmation email via webhook: {str(e)}")
                 
                 cls.log_info(f"Webhook processed: payment {payment.id} marked as success")
                 

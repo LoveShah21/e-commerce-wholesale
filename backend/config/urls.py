@@ -14,7 +14,7 @@ from apps.products.admin_views import (
 from apps.dashboard.web_views import DashboardWebView
 from apps.orders.web_views import OrderListView
 from apps.orders.cart_web_views import CartView, CheckoutView, OrderTrackingView, FinalPaymentView
-from apps.support.web_views import InquirySubmissionView, InquiryListView, FeedbackSubmissionView
+from apps.support.web_views import InquirySubmissionView, InquiryListView, FeedbackSubmissionView, ComplaintListView
 from apps.support.admin_views import (
     AdminInquiryListView, AdminInquiryDetailView,
     AdminComplaintListView, AdminComplaintDetailView, AdminComplaintResolveView,
@@ -116,6 +116,7 @@ urlpatterns = [
     path('inquiry/', InquirySubmissionView.as_view(), name='inquiry-web'),
     path('inquiries/', InquiryListView.as_view(), name='inquiries-list-web'),
     path('feedback/', FeedbackSubmissionView.as_view(), name='feedback-web'),
+    path('complaints/', ComplaintListView.as_view(), name='complaints-list-web'),
     
     # Dashboard
     path('dashboard/', DashboardWebView.as_view(), name='dashboard-web'),

@@ -9,6 +9,7 @@ class Inquiry(models.Model):
         ('pending', 'Pending'),
         ('reviewed', 'Reviewed'),
         ('quoted', 'Quoted'),
+        ('accepted', 'Accepted'),
     )
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)

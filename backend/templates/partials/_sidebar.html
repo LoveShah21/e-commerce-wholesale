@@ -52,6 +52,12 @@
                         Submit Feedback
                     </a>
                 </li>
+                <li class="nav-item mb-1">
+                    <a class="nav-link text-dark d-flex align-items-center" href="{% url 'complaints-list-web' %}">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        My Complaints
+                    </a>
+                </li>
                 {% endif %}
 
                 {% if user|is_admin %}

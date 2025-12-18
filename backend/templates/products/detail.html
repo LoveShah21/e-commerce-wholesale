@@ -108,22 +108,24 @@
                             <h6 class="mb-2">Select Size:</h6>
                             <div class="row g-2 mb-3">
                                 {% for vsize in variant.sizes.all %}
-                                {% with stock=vsize.stock_record.quantity_available|default:0 %}
+                                {% with raw_stock=vsize.stock_record.quantity_available|default:0 %}
+                                {% with stock=raw_stock|add:0 %}{% comment %}Ensure it's a number{% endcomment %}
                                 <div class="col-4">
                                     <input type="radio" class="btn-check" name="variant_size_{{ variant.id }}"
                                         id="size_{{ vsize.id }}" value="{{ vsize.id }}"
                                         data-variant-id="{{ variant.id }}" data-price="{{ variant.base_price }}"
-                                        data-stock="{{ stock }}" {% if stock == 0 %}disabled{% endif %}>
+                                        data-stock="{{ stock|default:0 }}" {% if stock <= 0 %}disabled{% endif %}>
                                     <label class="btn btn-outline-primary w-100" for="size_{{ vsize.id }}">
                                         {{ vsize.size.size_code }}
                                         <br>
-                                        <small class="{% if stock == 0 %}text-danger{% else %}text-success{% endif %}">
-                                            {% if stock == 0 %}
+                                        <small class="{% if stock <= 0 %}text-danger{% elif stock < 5 %}text-warning{% else %}text-success{% endif %}">
+                                            {% if stock <= 0 %}
                                             Out of Stock
-                                            {% elif stock < 5 %} Only {{ stock }} left {% else %} In Stock {% endif %}
-                                                </small>
+                                            {% elif stock < 5 and stock > 0 %}Only {{ stock }} left{% else %}In Stock{% endif %}
+                                        </small>
                                     </label>
                                 </div>
+                                {% endwith %}
                                 {% endwith %}
                                 {% endfor %}
                             </div>
@@ -276,10 +278,10 @@
                 stockCheckInterval = setInterval(async () => {
                     try {
                         const stock = await CartModule.checkStockAvailability(variantSizeId);
-                        const available = stock.available;
+                        const available = Math.max(0, stock.available || 0); // Ensure non-negative
 
                         // Update stock display
-                        if (available === 0) {
+                        if (available <= 0) {
                             stockDisplay.className = 'text-danger';
                             stockDisplay.textContent = 'Out of Stock';
                             this.disabled = true;
