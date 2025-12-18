@@ -1,0 +1,72 @@
+{% extends 'emails/base_email.html' %}
+
+{% block title %}Order Confirmation - Order #{{ order.id }} | {{ company_name }}{% endblock %}
+
+{% block content %}
+<div class="greeting">
+    Hello {{ customer_name }},
+</div>
+
+<p>
+    Thank you for your order! We're excited to create your custom shirts. 
+    Your order has been confirmed and is now being processed.
+</p>
+
+<div class="order-info">
+    <h3>📦 Order Confirmation</h3>
+    <p><strong>Order ID:</strong> #{{ order.id }}</p>
+    <p><strong>Order Date:</strong> {{ order.order_date|date:"F d, Y" }}</p>
+    <p><strong>Status:</strong> {{ order.status|title }}</p>
+    <p><strong>Total Amount:</strong> ₹{{ order.total_amount }}</p>
+</div>
+
+<div class="order-info">
+    <h3>🛍️ Order Items</h3>
+    {% for item in order.items.all %}
+    <div style="border-bottom: 1px solid #eee; padding: 10px 0;">
+        <p><strong>{{ item.variant_size.variant.product.product_name }}</strong></p>
+        <p>
+            Color: {{ item.variant_size.variant.color.color_name }} | 
+            Size: {{ item.variant_size.size.size_code }} | 
+            Quantity: {{ item.quantity }}
+        </p>
+        <p>Price: ₹{{ item.snapshot_unit_price }} × {{ item.quantity }} = ₹{{ item.line_total }}</p>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="order-info">
+    <h3>🚚 Delivery Address</h3>
+    <p>
+        {{ order.delivery_address.address_line1 }}<br>
+        {% if order.delivery_address.address_line2 %}{{ order.delivery_address.address_line2 }}<br>{% endif %}
+        {{ order.delivery_address.postal_code.city.city_name }}, 
+        {{ order.delivery_address.postal_code.city.state.state_name }} 
+        {{ order.delivery_address.postal_code.postal_code }}
+    </p>
+</div>
+
+<p>
+    <strong>What happens next?</strong>
+</p>
+<ul>
+    <li>📋 We'll review your order and begin production</li>
+    <li>✂️ Your custom shirts will be crafted with care</li>
+    <li>💳 You'll receive a final payment notification when ready</li>
+    <li>📦 Once final payment is complete, we'll dispatch your order</li>
+</ul>
+
+<div style="text-align: center;">
+    <a href="{{ order_tracking_url }}" class="btn">
+        📱 Track Your Order
+    </a>
+</div>
+
+<p>
+    You can track your order status anytime using the link above or by visiting your orders page.
+</p>
+
+<p>
+    Thank you for choosing {{ company_name }}! We appreciate your business.
+</p>
+{% endblock %}

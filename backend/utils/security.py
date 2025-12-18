@@ -18,7 +18,12 @@ ALLOWED_IMAGE_TYPES = {
     'image/jpeg': ['.jpg', '.jpeg'],
     'image/png': ['.png'],
     'image/gif': ['.gif'],
-    'image/webp': ['.webp']
+    'image/webp': ['.webp'],
+    'image/bmp': ['.bmp'],
+    'image/tiff': ['.tiff', '.tif'],
+    'image/heic': ['.heic'],
+    'image/heif': ['.heif'],
+    'image/avif': ['.avif']
 }
 
 ALLOWED_DOCUMENT_TYPES = {

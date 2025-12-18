@@ -133,6 +133,19 @@ class PaymentHistoryView(LoginRequiredMixin, View):
         if status_filter:
             payments = payments.filter(payment_status=status_filter)
         
+        # Add retry logic for each payment
+        for payment in payments:
+            # Check if retry is allowed (failed payment with no successful payment of same type)
+            if payment.payment_status == 'failed':
+                successful_payment_exists = Payment.objects.filter(
+                    order=payment.order,
+                    payment_type=payment.payment_type,
+                    payment_status='success'
+                ).exists()
+                payment.can_retry = not successful_payment_exists
+            else:
+                payment.can_retry = False
+        
         context = {
             'payments': payments,
             'order_id': order_id,

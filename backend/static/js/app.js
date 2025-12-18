@@ -11,11 +11,45 @@ const VaitikanApp = {
 
     // Hide loading overlay
     hideLoading: function () {
+        console.log('🔄 hideLoading called');
+
         const modalElement = document.getElementById('loadingModal');
-        const modal = bootstrap.Modal.getInstance(modalElement);
-        if (modal) {
-            modal.hide();
+        if (!modalElement) {
+            console.log('❌ No loading modal element found');
+            return;
         }
+
+        console.log('🔧 Force hiding modal with aggressive approach');
+
+        // Immediately force hide the modal
+        modalElement.style.setProperty('display', 'none', 'important');
+        modalElement.style.setProperty('visibility', 'hidden', 'important');
+        modalElement.classList.remove('show', 'fade', 'd-block');
+        modalElement.setAttribute('aria-hidden', 'true');
+        modalElement.removeAttribute('aria-modal');
+        modalElement.removeAttribute('role');
+
+        // Remove all possible backdrops
+        const backdrops = document.querySelectorAll('.modal-backdrop, .fade.show');
+        backdrops.forEach(backdrop => backdrop.remove());
+
+        // Reset body completely
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+        document.body.style.marginRight = '';
+
+        // Try Bootstrap hide as well (but don't rely on it)
+        try {
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) {
+                modal.hide();
+            }
+        } catch (e) {
+            console.log('Bootstrap modal hide failed, but forced hide should work');
+        }
+
+        console.log('✅ Aggressive modal hide completed');
     },
 
     // Show confirmation modal
@@ -157,6 +191,16 @@ const VaitikanApp = {
             clearTimeout(timeout);
             timeout = setTimeout(later, wait);
         };
+    },
+
+    // Test function for debugging loading modal
+    testLoading: function () {
+        console.log('🧪 Testing loading modal');
+        this.showLoading('Test loading...');
+        setTimeout(() => {
+            console.log('🧪 Attempting to hide loading after 2 seconds');
+            this.hideLoading();
+        }, 2000);
     }
 };
 

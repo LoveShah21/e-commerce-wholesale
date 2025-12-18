@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Order, OrderItem, Cart, CartItem
+from apps.products.models import VariantSize
 from apps.products.serializers import VariantSizeSerializer
 
 # Nested serializers for order tracking
@@ -49,8 +50,65 @@ class OrderVariantSizeSerializer(serializers.Serializer):
     variant = VariantSerializer()
     size = SizeSerializer()
 
+class CartVariantSizeSerializer(serializers.ModelSerializer):
+    """Enhanced variant size serializer for cart items with full product details"""
+    size_code = serializers.CharField(source='size.size_code', read_only=True)
+    size_name = serializers.CharField(source='size.size_name', read_only=True)
+    final_price = serializers.SerializerMethodField()
+    stock_available = serializers.SerializerMethodField()
+    stock_info = serializers.SerializerMethodField()
+    
+    # Product details
+    product_name = serializers.CharField(source='variant.product.product_name', read_only=True)
+    product_id = serializers.IntegerField(source='variant.product.id', read_only=True)
+    
+    # Variant details
+    fabric_name = serializers.CharField(source='variant.fabric.fabric_name', read_only=True)
+    color_name = serializers.CharField(source='variant.color.color_name', read_only=True)
+    pattern_name = serializers.CharField(source='variant.pattern.pattern_name', read_only=True)
+    sleeve_type = serializers.CharField(source='variant.sleeve.sleeve_type', read_only=True)
+    pocket_type = serializers.CharField(source='variant.pocket.pocket_type', read_only=True)
+    base_price = serializers.DecimalField(source='variant.base_price', max_digits=10, decimal_places=2, read_only=True)
+    sku = serializers.CharField(source='variant.sku', read_only=True)
+    
+    # Product images
+    product_images = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = VariantSize
+        fields = (
+            'id', 'size', 'size_code', 'size_name', 'stock_quantity', 'final_price', 
+            'stock_available', 'stock_info', 'product_name', 'product_id',
+            'fabric_name', 'color_name', 'pattern_name', 'sleeve_type', 'pocket_type',
+            'base_price', 'sku', 'product_images'
+        )
+
+    def get_final_price(self, obj):
+        # Base price + Markup
+        base = obj.variant.base_price
+        markup = obj.size.size_markup_percentage
+        return base * (1 + markup / 100)
+        
+    def get_stock_available(self, obj):
+        if hasattr(obj, 'stock_record'):
+            return obj.stock_record.quantity_available
+        return 0
+    
+    def get_stock_info(self, obj):
+        if hasattr(obj, 'stock_record'):
+            return {
+                'in_stock': obj.stock_record.quantity_in_stock,
+                'reserved': obj.stock_record.quantity_reserved,
+                'available': obj.stock_record.quantity_available
+            }
+        return None
+    
+    def get_product_images(self, obj):
+        images = obj.variant.product.images.all()
+        return [{'image_url': img.image_url, 'alt_text': img.alt_text} for img in images]
+
 class CartItemSerializer(serializers.ModelSerializer):
-    variant_details = VariantSizeSerializer(source='variant_size', read_only=True)
+    variant_details = CartVariantSizeSerializer(source='variant_size', read_only=True)
     
     class Meta:
         model = CartItem

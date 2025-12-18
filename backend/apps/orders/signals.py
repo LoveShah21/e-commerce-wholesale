@@ -34,9 +34,55 @@ def release_stock(sender, instance, **kwargs):
 def update_order_status_on_payment(sender, instance, created, **kwargs):
     """
     Auto-confirm order when advance payment succeeds.
+    Reduce stock when final payment succeeds.
     """
-    if instance.payment_status == 'success' and instance.payment_type == 'advance':
+    if instance.payment_status == 'success':
         order = instance.order
-        if order.status == 'pending':
-            order.status = 'confirmed'
-            order.save()
+        
+        if instance.payment_type == 'advance':
+            # Advance payment successful - confirm order
+            if order.status == 'pending':
+                order.status = 'confirmed'
+                order.save()
+        
+        elif instance.payment_type == 'final':
+            # Final payment successful - reduce actual stock quantities
+            reduce_stock_on_final_payment(order)
+
+def reduce_stock_on_final_payment(order):
+    """
+    Reduce actual stock quantities when final payment is successful.
+    This converts reserved stock to actual stock reduction.
+    """
+    for order_item in order.items.all():
+        variant_size = order_item.variant_size
+        quantity = order_item.quantity
+        
+        try:
+            # Get or create stock record
+            stock, _ = Stock.objects.get_or_create(variant_size=variant_size)
+            
+            # Reduce actual stock and reserved stock
+            stock.quantity_in_stock -= quantity
+            stock.quantity_reserved -= quantity
+            
+            # Ensure stock doesn't go negative
+            if stock.quantity_in_stock < 0:
+                stock.quantity_in_stock = 0
+            if stock.quantity_reserved < 0:
+                stock.quantity_reserved = 0
+                
+            stock.save()
+            
+            # Also update the variant_size stock_quantity for consistency
+            variant_size.stock_quantity = stock.quantity_in_stock
+            variant_size.save()
+            
+            print(f"Stock reduced for {variant_size}: -{quantity} units. New stock: {stock.quantity_in_stock}")
+            
+        except Exception as e:
+            print(f"Error reducing stock for {variant_size}: {str(e)}")
+            # Log the error but don't fail the payment process
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to reduce stock for order {order.id}, item {order_item.id}: {str(e)}")

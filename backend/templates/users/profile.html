@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+
+{% block title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="bi bi-person-circle me-2"></i>My Profile</h4>
+                </div>
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="full_name" class="form-label">Full Name</label>
+                                <input type="text" class="form-control" id="full_name" name="full_name" 
+                                       value="{{ user.full_name }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="email" class="form-label">Email Address</label>
+                                <input type="email" class="form-control" id="email" name="email" 
+                                       value="{{ user.email }}" readonly>
+                                <div class="form-text">Email cannot be changed</div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="phone" class="form-label">Phone Number</label>
+                                <input type="tel" class="form-control" id="phone" name="phone" 
+                                       value="{{ user.phone|default:'' }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="user_type" class="form-label">Account Type</label>
+                                <input type="text" class="form-control" id="user_type" 
+                                       value="{{ user.get_user_type_display|default:'Customer' }}" readonly>
+                                <div class="form-text">Account type cannot be changed</div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="account_status" class="form-label">Account Status</label>
+                                <input type="text" class="form-control" id="account_status" 
+                                       value="{{ user.get_account_status_display }}" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="date_joined" class="form-label">Member Since</label>
+                                <input type="text" class="form-control" id="date_joined" 
+                                       value="{{ user.date_joined|date:'F d, Y' }}" readonly>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="/" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left me-1"></i>Back to Home
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-1"></i>Update Profile
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Additional Information Card -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5><i class="bi bi-info-circle me-2"></i>Account Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Username:</strong> {{ user.username }}</p>
+                            <p><strong>Last Login:</strong> 
+                                {% if user.last_login %}
+                                    {{ user.last_login|date:'F d, Y g:i A' }}
+                                {% else %}
+                                    Never
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Profile Created:</strong> {{ user.date_joined|date:'F d, Y g:i A' }}</p>
+                            <p><strong>Profile Updated:</strong> 
+                                {% if user.last_login %}
+                                    {{ user.last_login|date:'F d, Y g:i A' }}
+                                {% else %}
+                                    {{ user.date_joined|date:'F d, Y g:i A' }}
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions Card -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5><i class="bi bi-lightning me-2"></i>Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-2">
+                            <a href="/orders/" class="btn btn-outline-primary w-100">
+                                <i class="bi bi-bag me-1"></i>My Orders
+                            </a>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <a href="/cart/" class="btn btn-outline-success w-100">
+                                <i class="bi bi-cart me-1"></i>My Cart
+                            </a>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <a href="/payments/history/" class="btn btn-outline-info w-100">
+                                <i class="bi bi-credit-card me-1"></i>Payment History
+                            </a>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-4 mb-2">
+                            <a href="/inquiry/" class="btn btn-outline-warning w-100">
+                                <i class="bi bi-question-circle me-1"></i>Submit Inquiry
+                            </a>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <a href="/feedback/" class="btn btn-outline-secondary w-100">
+                                <i class="bi bi-chat-dots me-1"></i>Give Feedback
+                            </a>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <a href="/dashboard/" class="btn btn-outline-dark w-100">
+                                <i class="bi bi-speedometer2 me-1"></i>Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -186,7 +186,7 @@
             <div class="card-body">
                 <p class="mb-1"><strong>{{ order.user.full_name }}</strong></p>
                 <p class="mb-1 text-muted">{{ order.user.email }}</p>
-                <p class="mb-0 text-muted">{{ order.user.phone_number|default:"No phone" }}</p>
+                <p class="mb-0 text-muted">{{ order.user.phone|default:"No phone" }}</p>
             </div>
         </div>
 
@@ -200,10 +200,8 @@
                 {% if order.delivery_address.address_line2 %}
                 <p class="mb-1">{{ order.delivery_address.address_line2 }}</p>
                 {% endif %}
-                <p class="mb-1">{{ order.delivery_address.city.city_name }}, {{ order.delivery_address.state.state_name
-                    }}</p>
-                <p class="mb-1">{{ order.delivery_address.country.country_name }} - {{
-                    order.delivery_address.postal_code.postal_code }}</p>
+                <p class="mb-1">{{ order.delivery_address.postal_code.city.city_name }}, {{ order.delivery_address.postal_code.city.state.state_name }}</p>
+                <p class="mb-1">{{ order.delivery_address.postal_code.city.state.country.country_name }} - {{ order.delivery_address.postal_code.postal_code }}</p>
             </div>
         </div>
 

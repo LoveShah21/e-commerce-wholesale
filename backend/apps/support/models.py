@@ -1,4 +1,5 @@
 from django.db import models
+from cloudinary.models import CloudinaryField
 from apps.users.models import User
 from apps.products.models import VariantSize
 from apps.orders.models import Order
@@ -12,7 +13,7 @@ class Inquiry(models.Model):
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     inquiry_description = models.TextField()
-    logo_file_url = models.CharField(max_length=500, null=True, blank=True)
+    logo_file = CloudinaryField('logo', null=True, blank=True, folder='inquiry_logos')
     inquiry_date = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=15, choices=STATUS_CHOICES, default='pending')
 

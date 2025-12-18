@@ -1,0 +1,508 @@
+{% extends 'base.html' %}
+
+{% block title %}My Inquiries - Vaitikan City{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-envelope me-2"></i>My Inquiries</h2>
+                <a href="/inquiry/" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i>Submit New Inquiry
+                </a>
+            </div>
+
+            <!-- Filter and Search -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="statusFilter" class="form-label">Filter by Status</label>
+                            <select class="form-select" id="statusFilter">
+                                <option value="">All Status</option>
+                                <option value="pending">Pending</option>
+                                <option value="reviewed">Reviewed</option>
+                                <option value="quoted">Quoted</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="searchInput" class="form-label">Search</label>
+                            <input type="text" class="form-control" id="searchInput" placeholder="Search in descriptions...">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inquiries List -->
+            <div id="inquiriesContainer">
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Loading your inquiries...</p>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <nav aria-label="Inquiries pagination" id="paginationContainer" style="display: none;">
+                <ul class="pagination justify-content-center" id="paginationList">
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- Inquiry Detail Modal -->
+<div class="modal fade" id="inquiryDetailModal" tabindex="-1" aria-labelledby="inquiryDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="inquiryDetailModalLabel">Inquiry Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="inquiryDetailContent">
+                <!-- Content will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentPage = 1;
+    let currentStatus = '';
+    let currentSearch = '';
+    let totalPages = 1;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        loadInquiries();
+
+        // Filter and search handlers
+        document.getElementById('statusFilter').addEventListener('change', function() {
+            currentStatus = this.value;
+            currentPage = 1;
+            loadInquiries();
+        });
+
+        document.getElementById('searchInput').addEventListener('input', debounce(function() {
+            currentSearch = this.value;
+            currentPage = 1;
+            loadInquiries();
+        }, 500));
+    });
+
+    function loadInquiries() {
+        const container = document.getElementById('inquiriesContainer');
+        
+        // Show loading
+        container.innerHTML = `
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2 text-muted">Loading your inquiries...</p>
+            </div>
+        `;
+
+        // Build query parameters
+        const params = new URLSearchParams();
+        if (currentStatus) params.append('status', currentStatus);
+        if (currentSearch) params.append('search', currentSearch);
+        params.append('page', currentPage);
+
+        fetch(`/api/support/inquiries/?${params.toString()}`, {
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            renderInquiries(data.results || data);
+            if (data.count !== undefined) {
+                setupPagination(data.count, data.results.length);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading inquiries:', error);
+            container.innerHTML = `
+                <div class="alert alert-danger text-center">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Failed to load inquiries. Please try again.
+                </div>
+            `;
+        });
+    }
+
+    function renderInquiries(inquiries) {
+        const container = document.getElementById('inquiriesContainer');
+
+        if (!inquiries || inquiries.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="bi bi-envelope display-1 text-muted"></i>
+                    <h4 class="mt-3 text-muted">No Inquiries Found</h4>
+                    <p class="text-muted">You haven't submitted any inquiries yet.</p>
+                    <a href="/inquiry/" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i>Submit Your First Inquiry
+                    </a>
+                </div>
+            `;
+            return;
+        }
+
+        let html = '<div class="row g-4">';
+        
+        inquiries.forEach(inquiry => {
+            const date = new Date(inquiry.inquiry_date).toLocaleDateString('en-IN', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+            });
+
+            const statusBadge = {
+                'pending': 'bg-warning text-dark',
+                'reviewed': 'bg-info text-white',
+                'quoted': 'bg-success text-white'
+            }[inquiry.status] || 'bg-secondary text-white';
+
+            const statusIcon = {
+                'pending': 'clock',
+                'reviewed': 'eye',
+                'quoted': 'check-circle'
+            }[inquiry.status] || 'circle';
+
+            html += `
+                <div class="col-12">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <h5 class="card-title mb-1">
+                                        <i class="bi bi-envelope me-2"></i>Inquiry #${inquiry.id}
+                                    </h5>
+                                    <small class="text-muted">
+                                        <i class="bi bi-calendar me-1"></i>${date}
+                                    </small>
+                                </div>
+                                <span class="badge ${statusBadge}">
+                                    <i class="bi bi-${statusIcon} me-1"></i>${inquiry.status.charAt(0).toUpperCase() + inquiry.status.slice(1)}
+                                </span>
+                            </div>
+                            
+                            <p class="card-text text-muted mb-3">
+                                ${inquiry.inquiry_description.substring(0, 200)}${inquiry.inquiry_description.length > 200 ? '...' : ''}
+                            </p>
+                            
+                            ${inquiry.logo_file ? `
+                                <div class="mb-3">
+                                    <small class="text-muted">
+                                        <i class="bi bi-paperclip me-1"></i>Logo file attached
+                                    </small>
+                                </div>
+                            ` : ''}
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <button class="btn btn-outline-primary btn-sm" onclick="viewInquiryDetails(${inquiry.id})">
+                                    <i class="bi bi-eye me-1"></i>View Details
+                                </button>
+                                
+                                ${inquiry.status === 'quoted' ? `
+                                    <span class="text-success">
+                                        <i class="bi bi-check-circle me-1"></i>Quotation Available
+                                    </span>
+                                ` : inquiry.status === 'reviewed' ? `
+                                    <span class="text-info">
+                                        <i class="bi bi-clock me-1"></i>Under Review
+                                    </span>
+                                ` : `
+                                    <span class="text-warning">
+                                        <i class="bi bi-hourglass-split me-1"></i>Awaiting Review
+                                    </span>
+                                `}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    function viewInquiryDetails(inquiryId) {
+        const modal = new bootstrap.Modal(document.getElementById('inquiryDetailModal'));
+        const content = document.getElementById('inquiryDetailContent');
+        
+        // Show loading in modal
+        content.innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2 text-muted">Loading inquiry details...</p>
+            </div>
+        `;
+        
+        modal.show();
+
+        fetch(`/api/support/inquiries/${inquiryId}/`, {
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(inquiry => {
+            renderInquiryDetails(inquiry);
+        })
+        .catch(error => {
+            console.error('Error loading inquiry details:', error);
+            content.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Failed to load inquiry details. Please try again.
+                </div>
+            `;
+        });
+    }
+
+    function renderInquiryDetails(inquiry) {
+        const content = document.getElementById('inquiryDetailContent');
+        const date = new Date(inquiry.inquiry_date).toLocaleDateString('en-IN', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        const statusBadge = {
+            'pending': 'bg-warning text-dark',
+            'reviewed': 'bg-info text-white',
+            'quoted': 'bg-success text-white'
+        }[inquiry.status] || 'bg-secondary text-white';
+
+        let html = `
+            <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4>Inquiry #${inquiry.id}</h4>
+                    <span class="badge ${statusBadge} fs-6">
+                        ${inquiry.status.charAt(0).toUpperCase() + inquiry.status.slice(1)}
+                    </span>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-sm-3"><strong>Submitted:</strong></div>
+                    <div class="col-sm-9">${date}</div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-sm-3"><strong>Description:</strong></div>
+                    <div class="col-sm-9">${inquiry.inquiry_description}</div>
+                </div>
+                
+                ${inquiry.logo_file ? `
+                    <div class="row mb-3">
+                        <div class="col-sm-3"><strong>Logo File:</strong></div>
+                        <div class="col-sm-9">
+                            <a href="${inquiry.logo_file}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-download me-1"></i>View/Download Logo
+                            </a>
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+
+        // Add quotation requests if any
+        if (inquiry.quotation_requests && inquiry.quotation_requests.length > 0) {
+            html += `
+                <hr>
+                <h5 class="mb-3"><i class="bi bi-file-text me-2"></i>Quotation Requests</h5>
+            `;
+
+            inquiry.quotation_requests.forEach((request, index) => {
+                const requestDate = new Date(request.requested_date).toLocaleDateString('en-IN');
+                
+                html += `
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <h6 class="card-title">Request #${index + 1}</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Quantity:</strong> ${request.requested_quantity}</p>
+                                    <p><strong>Date:</strong> ${requestDate}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    ${request.customization_type ? `<p><strong>Customization:</strong> ${request.customization_type}</p>` : ''}
+                                    <p><strong>Status:</strong> 
+                                        <span class="badge ${request.status === 'quoted' ? 'bg-success' : 'bg-warning'}">${request.status}</span>
+                                    </p>
+                                </div>
+                            </div>
+                            ${request.customization_details ? `
+                                <p><strong>Details:</strong> ${request.customization_details}</p>
+                            ` : ''}
+                            
+                            ${request.prices && request.prices.length > 0 ? `
+                                <div class="mt-3">
+                                    <h6>Quotation Prices:</h6>
+                                    ${request.prices.map(price => `
+                                        <div class="border rounded p-3 mb-2">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <p><strong>Unit Price:</strong> ₹${price.unit_price}</p>
+                                                    <p><strong>Quantity:</strong> ${price.quoted_quantity}</p>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <p><strong>Customization Charge:</strong> ₹${price.customization_charge_per_unit}/unit</p>
+                                                    <p><strong>Valid Until:</strong> ${new Date(price.valid_until).toLocaleDateString('en-IN')}</p>
+                                                </div>
+                                            </div>
+                                            <p><strong>Total:</strong> ₹${(parseFloat(price.unit_price) + parseFloat(price.customization_charge_per_unit)) * price.quoted_quantity}</p>
+                                            
+                                            ${price.status === 'sent' && new Date() <= new Date(price.valid_until) ? `
+                                                <div class="mt-2">
+                                                    <button class="btn btn-success btn-sm me-2" onclick="respondToQuotation(${price.id}, 'accept')">
+                                                        <i class="bi bi-check-circle me-1"></i>Accept
+                                                    </button>
+                                                    <button class="btn btn-outline-danger btn-sm" onclick="respondToQuotation(${price.id}, 'reject')">
+                                                        <i class="bi bi-x-circle me-1"></i>Reject
+                                                    </button>
+                                                </div>
+                                            ` : `
+                                                <span class="badge ${price.status === 'accepted' ? 'bg-success' : price.status === 'rejected' ? 'bg-danger' : 'bg-secondary'}">
+                                                    ${price.status.charAt(0).toUpperCase() + price.status.slice(1)}
+                                                </span>
+                                            `}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        content.innerHTML = html;
+    }
+
+    function respondToQuotation(priceId, action) {
+        if (!confirm(`Are you sure you want to ${action} this quotation?`)) {
+            return;
+        }
+
+        VaitikanApp.showLoading(`${action === 'accept' ? 'Accepting' : 'Rejecting'} quotation...`);
+
+        fetch(`/api/support/quotation-prices/${priceId}/accept-reject/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ action: action })
+        })
+        .then(response => response.json())
+        .then(data => {
+            VaitikanApp.hideLoading();
+            VaitikanApp.showToast(`Quotation ${action}ed successfully!`, 'success');
+            
+            // Refresh the modal content
+            const modal = bootstrap.Modal.getInstance(document.getElementById('inquiryDetailModal'));
+            const inquiryId = data.quotation.inquiry;
+            viewInquiryDetails(inquiryId);
+            
+            // Refresh the main list
+            loadInquiries();
+        })
+        .catch(error => {
+            VaitikanApp.hideLoading();
+            const message = error.detail || error.message || `Failed to ${action} quotation`;
+            VaitikanApp.showToast(message, 'error');
+        });
+    }
+
+    function setupPagination(totalCount, currentCount) {
+        const container = document.getElementById('paginationContainer');
+        const list = document.getElementById('paginationList');
+        
+        totalPages = Math.ceil(totalCount / 10); // Assuming 10 items per page
+        
+        if (totalPages <= 1) {
+            container.style.display = 'none';
+            return;
+        }
+        
+        container.style.display = 'block';
+        
+        let html = '';
+        
+        // Previous button
+        html += `
+            <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="changePage(${currentPage - 1})">Previous</a>
+            </li>
+        `;
+        
+        // Page numbers
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === currentPage || i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                html += `
+                    <li class="page-item ${i === currentPage ? 'active' : ''}">
+                        <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
+                    </li>
+                `;
+            } else if (i === currentPage - 2 || i === currentPage + 2) {
+                html += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+            }
+        }
+        
+        // Next button
+        html += `
+            <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="changePage(${currentPage + 1})">Next</a>
+            </li>
+        `;
+        
+        list.innerHTML = html;
+    }
+
+    function changePage(page) {
+        if (page < 1 || page > totalPages || page === currentPage) return;
+        
+        currentPage = page;
+        loadInquiries();
+        
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+{% endblock %}

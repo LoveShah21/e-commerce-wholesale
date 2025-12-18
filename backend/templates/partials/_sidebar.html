@@ -1,7 +1,8 @@
 {% load static %}
 {% load role_tags %}
 
-<aside class="sidebar bg-light border-end" style="width: 250px; min-height: calc(100vh - 56px);">
+<!-- Desktop Sidebar (hidden on mobile) -->
+<aside class="sidebar bg-light border-end d-none d-lg-block" style="width: 250px; min-height: calc(100vh - 56px);">
     <div class="d-flex flex-column h-100">
         <div class="p-3">
             <h6 class="text-muted text-uppercase small mb-3">Navigation</h6>
@@ -162,3 +163,4 @@
         </div>
     </div>
 </aside>
+

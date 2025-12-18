@@ -3,7 +3,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
-from apps.users.web_views import WebLoginView, WebRegisterView, web_logout
+from apps.users.web_views import WebLoginView, WebRegisterView, web_logout, ProfileView
 from apps.products.web_views import ProductListView, ProductDetailView
 from apps.products.admin_views import (
     AdminProductListView, AdminProductCreateView, AdminProductEditView, AdminProductDeleteView,
@@ -13,8 +13,8 @@ from apps.products.admin_views import (
 )
 from apps.dashboard.web_views import DashboardWebView
 from apps.orders.web_views import OrderListView
-from apps.orders.cart_web_views import CartView, CheckoutView, OrderTrackingView
-from apps.support.web_views import InquirySubmissionView, FeedbackSubmissionView
+from apps.orders.cart_web_views import CartView, CheckoutView, OrderTrackingView, FinalPaymentView
+from apps.support.web_views import InquirySubmissionView, InquiryListView, FeedbackSubmissionView
 from apps.support.admin_views import (
     AdminInquiryListView, AdminInquiryDetailView,
     AdminComplaintListView, AdminComplaintDetailView, AdminComplaintResolveView,
@@ -97,6 +97,7 @@ urlpatterns = [
     path('login/', WebLoginView.as_view(), name='login'),
     path('register/', WebRegisterView.as_view(), name='register'),
     path('logout/', web_logout, name='logout'),
+    path('profile/', ProfileView.as_view(), name='profile'),
     
     # Product Routes (Customer)
     path('products/', ProductListView.as_view(), name='product-list-web'),
@@ -108,10 +109,12 @@ urlpatterns = [
     
     # Order Routes
     path('orders/', OrderListView.as_view(), name='order-list-web'),
+    path('orders/<int:order_id>/final-payment/', FinalPaymentView.as_view(), name='final-payment-web'),
     path('order-tracking/<int:order_id>/', OrderTrackingView.as_view(), name='order-tracking-web'),
     
     # Support Routes
     path('inquiry/', InquirySubmissionView.as_view(), name='inquiry-web'),
+    path('inquiries/', InquiryListView.as_view(), name='inquiries-list-web'),
     path('feedback/', FeedbackSubmissionView.as_view(), name='feedback-web'),
     
     # Dashboard

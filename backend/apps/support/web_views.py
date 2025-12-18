@@ -6,6 +6,10 @@ class InquirySubmissionView(LoginRequiredMixin, View):
     def get(self, request):
         return render(request, 'support/inquiry.html')
 
+class InquiryListView(LoginRequiredMixin, View):
+    def get(self, request):
+        return render(request, 'support/inquiries_list.html')
+
 class FeedbackSubmissionView(LoginRequiredMixin, View):
     def get(self, request):
         return render(request, 'support/feedback.html')

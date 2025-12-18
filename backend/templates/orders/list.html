@@ -18,6 +18,7 @@
                 <th>Order ID</th>
                 <th>Date</th>
                 <th>Status</th>
+                <th>Payment</th>
                 <th>Details</th>
                 <th>Invoice</th>
             </tr>
@@ -26,7 +27,7 @@
             {% for order in orders %}
             <tr>
                 <td>#{{ order.id }}</td>
-                <td>{{ order.created_at|date:"F d, Y" }}</td>
+                <td>{{ order.order_date|date:"F d, Y" }}</td>
                 <td>
                     <span class="badge 
                         {% if order.status == 'pending' %}bg-warning
@@ -37,6 +38,35 @@
                         {% else %}bg-secondary{% endif %}">
                         {{ order.status|title }}
                     </span>
+                </td>
+                <td>
+                    <!-- Payment Status and Actions -->
+                    {% if not order.advance_paid %}
+                        <span class="badge bg-warning">Advance Pending</span>
+                    {% elif not order.final_paid %}
+                        {% if order.final_payment %}
+                            {% if order.final_payment.payment_status == 'initiated' %}
+                                <a href="{% url 'final-payment-web' order.id %}" class="btn btn-sm btn-success">
+                                    <i class="bi bi-credit-card me-1"></i>Pay Final
+                                </a>
+                                <br><small class="text-muted">₹{{ order.final_payment.amount }}</small>
+                            {% elif order.final_payment.payment_status == 'failed' %}
+                                <a href="{% url 'final-payment-web' order.id %}" class="btn btn-sm btn-warning">
+                                    <i class="bi bi-arrow-clockwise me-1"></i>Retry Payment
+                                </a>
+                                <br><small class="text-danger">Payment Failed</small>
+                            {% elif order.final_payment.payment_status == 'pending' %}
+                                <span class="badge bg-info">Processing</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="badge bg-secondary">Final Pending</span>
+                            <br><small class="text-muted">Awaiting admin</small>
+                        {% endif %}
+                    {% else %}
+                        <span class="badge bg-success">
+                            <i class="bi bi-check-circle me-1"></i>Paid
+                        </span>
+                    {% endif %}
                 </td>
                 <td>
                     <a href="{% url 'order-tracking-web' order.id %}" class="btn btn-sm btn-outline-primary">
@@ -52,12 +82,10 @@
                             <ul class="list-unstyled mb-0">
                                 {% for item in order.items.all %}
                                 <li class="mb-1">
-                                    <strong>{{ item.quantity }}x</strong> {{
-                                    item.variant_size.variant.product.product_name }}
+                                    <strong>{{ item.quantity }}x</strong> {{  item.variant_size.variant.product.product_name }}
                                     <br>
                                     <small class="text-muted">
-                                        {{ item.variant_size.variant.color.color_name }} - {{
-                                        item.variant_size.size.size_code }}
+                                        {{ item.variant_size.variant.color.color_name }} - {{ item.variant_size.size.size_code }}
                                     </small>
                                 </li>
                                 {% endfor %}
@@ -77,7 +105,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="5" class="text-center">You haven't placed any orders yet.</td>
+                <td colspan="6" class="text-center">You haven't placed any orders yet.</td>
             </tr>
             {% endfor %}
         </tbody>

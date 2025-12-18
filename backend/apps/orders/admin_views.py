@@ -265,7 +265,21 @@ class AdminOrderDetailView(LoginRequiredMixin, AdminRequiredMixin, View):
                     payment_type='final',
                     payment_method=payment_method
                 )
-                messages.success(request, 'Final payment order created')
+                
+                # Send email notification to customer
+                from services.email_service import EmailService
+                email_result = EmailService.send_final_payment_notification(
+                    order_id=order_id,
+                    payment_amount=float(result['payment'].amount),
+                    razorpay_order_id=result['razorpay_order']['id']
+                )
+                
+                if email_result['success']:
+                    messages.success(request, 'Final payment order created and notification sent to customer')
+                else:
+                    messages.success(request, 'Final payment order created')
+                    messages.warning(request, f'Email notification failed: {email_result["message"]}')
+                    
             except Exception as e:
                 messages.error(request, f'Error creating final payment: {str(e)}')
         

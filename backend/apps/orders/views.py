@@ -38,6 +38,16 @@ class OrderListCreateView(generics.ListCreateAPIView):
         if self.request.method == 'POST':
             return OrderCreateSerializer
         return OrderSerializer
+    
+    def create(self, request, *args, **kwargs):
+        # Use OrderCreateSerializer for creation
+        serializer = OrderCreateSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        order = serializer.save()
+        
+        # Use OrderSerializer for response
+        response_serializer = OrderSerializer(order)
+        return Response(response_serializer.data, status=status.HTTP_201_CREATED)
 
 class OrderDetailView(generics.RetrieveAPIView):
     serializer_class = OrderSerializer
@@ -143,7 +153,7 @@ class CartItemViewSet(viewsets.ModelViewSet):
     
     def create(self, request, *args, **kwargs):
         """Add item to cart using CartService"""
-        variant_size_id = request.data.get('variant_size')
+        variant_size_id = request.data.get('variant_size_id') or request.data.get('variant_size')
         quantity = request.data.get('quantity', 1)
         
         try:

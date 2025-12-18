@@ -111,8 +111,11 @@
 
     function renderCart(cart) {
         const container = document.getElementById('cartItemsContainer');
+        
+        // Handle different response structures
+        const items = cart.items || cart.results || [];
 
-        if (!cart.items || cart.items.length === 0) {
+        if (!items || items.length === 0) {
             container.innerHTML = `
                 <div class="text-center py-5">
                     <i class="bi bi-cart-x" style="font-size: 4rem; color: #ccc;"></i>
@@ -131,24 +134,28 @@
         html += '<thead><tr><th>Product</th><th>Price</th><th>Quantity</th><th>Total</th><th>Action</th></tr></thead>';
         html += '<tbody>';
 
-        cart.items.forEach(item => {
-            const product = item.variant_size.variant.product;
-            const variant = item.variant_size.variant;
-            const size = item.variant_size.size;
-            const price = parseFloat(item.variant_size.variant.base_price);
+        items.forEach(item => {
+            // Use the enhanced variant_details from the new serializer
+            const details = item.variant_details;
+            const productName = details.product_name || 'Unknown Product';
+            const fabricName = details.fabric_name || 'Unknown';
+            const colorName = details.color_name || 'Unknown';
+            const sizeCode = details.size_code || 'Unknown';
+            const price = parseFloat(details.final_price || 0);
             const total = price * item.quantity;
-            const stock = item.variant_size.stock_record?.quantity_available || 0;
+            const stock = details.stock_available || 0;
+            const images = details.product_images || [];
 
             // Show warning if quantity exceeds stock
             const stockWarning = item.quantity > stock ?
                 `<small class="text-danger d-block mt-1"><i class="bi bi-exclamation-triangle"></i> Insufficient stock!</small>` : '';
 
             html += `
-                <tr data-item-id="${item.id}" data-variant-size-id="${item.variant_size.id}">
+                <tr data-item-id="${item.id}" data-variant-size-id="${item.variant_size}">
                     <td>
                         <div class="d-flex align-items-center">
-                            ${product.images && product.images.length > 0 ?
-                    `<img src="${product.images[0].image_url}" alt="${product.product_name}" 
+                            ${images && images.length > 0 ?
+                    `<img src="${images[0].image_url}" alt="${productName}" 
                                       class="rounded me-3" style="width: 80px; height: 80px; object-fit: cover;">` :
                     `<div class="bg-secondary rounded me-3 d-flex align-items-center justify-content-center" 
                                       style="width: 80px; height: 80px;">
@@ -156,10 +163,10 @@
                                  </div>`
                 }
                             <div>
-                                <h6 class="mb-1">${product.product_name}</h6>
+                                <h6 class="mb-1">${productName}</h6>
                                 <small class="text-muted">
-                                    ${variant.fabric.fabric_name} - ${variant.color.color_name}<br>
-                                    Size: ${size.size_code}
+                                    ${fabricName} - ${colorName}<br>
+                                    Size: ${sizeCode}
                                 </small>
                             </div>
                         </div>

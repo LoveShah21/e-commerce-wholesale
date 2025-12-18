@@ -73,6 +73,17 @@ const CartModule = (function () {
      * @returns {Promise<object>} Stock information
      */
     async function checkStockAvailability(variantSizeId) {
+        // Validate variantSizeId
+        if (!variantSizeId || variantSizeId === 'undefined' || isNaN(variantSizeId)) {
+            console.error('Invalid variant size ID:', variantSizeId);
+            return {
+                available: 0,
+                inStock: 0,
+                reserved: 0,
+                error: 'Invalid variant size ID'
+            };
+        }
+
         try {
             const response = await fetch(`/api/products/sizes/${variantSizeId}/stock/`, {
                 method: 'GET',
@@ -110,60 +121,57 @@ const CartModule = (function () {
      * @returns {Promise<object>} Cart item data
      */
     async function addToCart(variantSizeId, quantity) {
+        console.log('🚀 AddToCart started:', { variantSizeId, quantity });
         try {
-            // First check stock availability
-            const stock = await checkStockAvailability(variantSizeId);
-
-            if (stock.error) {
-                throw {
-                    type: window.ErrorHandler.ErrorTypes.VALIDATION,
-                    message: 'Unable to verify stock availability'
-                };
-            }
-
-            // Validate quantity
-            const validation = validateQuantity(quantity, stock.available);
-            if (!validation.isValid) {
-                throw {
-                    type: window.ErrorHandler.ErrorTypes.VALIDATION,
-                    message: validation.message
-                };
-            }
-
             // Show loading
             if (window.VaitikanApp) {
+                console.log('📱 Showing loading modal');
                 window.VaitikanApp.showLoading('Adding to cart...');
             }
 
-            const data = await window.ErrorHandler.fetchWithErrorHandling('/api/cart/items/', {
+            const response = await fetch('/api/cart-items/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRFToken': getCookie('csrftoken')
                 },
                 body: JSON.stringify({
-                    variant_size: variantSizeId,
+                    variant_size_id: variantSizeId,
                     quantity: parseInt(quantity)
                 })
             });
 
-            // Hide loading
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.detail || errorData.error || `HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('✅ Add to cart API success:', data);
+
+            // Hide loading first
             if (window.VaitikanApp) {
+                console.log('🔄 Attempting to hide loading modal');
                 window.VaitikanApp.hideLoading();
+                console.log('✨ Loading modal hide called, showing toast');
                 window.VaitikanApp.showToast('Item added to cart successfully!', 'success');
             }
 
-            // Update cart count
-            updateCartCount();
+            // Update cart count (with error handling to not affect loading state)
+            try {
+                updateCartCount();
+            } catch (countError) {
+                console.error('Error updating cart count:', countError);
+            }
 
             return data;
         } catch (error) {
+            console.error('❌ Add to cart error:', error);
             if (window.VaitikanApp) {
+                console.log('🔄 Hiding loading modal due to error');
                 window.VaitikanApp.hideLoading();
+                window.VaitikanApp.showToast(error.message || 'Failed to add item to cart', 'error');
             }
-
-            window.ErrorHandler.displayError(error, { showToast: true });
-            window.ErrorHandler.logError(error, 'addToCart');
             throw error;
         }
     }
@@ -179,23 +187,29 @@ const CartModule = (function () {
         // Validate quantity
         const validation = validateQuantity(newQuantity, maxStock);
         if (!validation.isValid) {
-            const error = {
-                type: window.ErrorHandler.ErrorTypes.VALIDATION,
-                message: validation.message
-            };
-            window.ErrorHandler.displayError(error, { showToast: true });
-            throw error;
+            if (window.VaitikanApp) {
+                window.VaitikanApp.showToast(validation.message, 'error');
+            }
+            throw new Error(validation.message);
         }
 
         try {
-            const data = await window.ErrorHandler.fetchWithErrorHandling(`/api/cart/items/${itemId}/`, {
+            const response = await fetch(`/api/cart-items/${itemId}/`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRFToken': getCookie('csrftoken')
                 },
+                credentials: 'same-origin',
                 body: JSON.stringify({ quantity: parseInt(newQuantity) })
             });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.detail || errorData.error || `HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
 
             if (window.VaitikanApp) {
                 window.VaitikanApp.showToast('Cart updated', 'success');
@@ -203,8 +217,10 @@ const CartModule = (function () {
 
             return data;
         } catch (error) {
-            window.ErrorHandler.displayError(error, { showToast: true });
-            window.ErrorHandler.logError(error, 'updateCartItem');
+            if (window.VaitikanApp) {
+                window.VaitikanApp.showToast(error.message || 'Failed to update cart', 'error');
+            }
+            console.error('Update cart item error:', error);
             throw error;
         }
     }
@@ -218,15 +234,18 @@ const CartModule = (function () {
     async function removeCartItem(itemId, skipConfirmation = false) {
         const performRemoval = async () => {
             try {
-                const response = await fetch(`/api/cart/items/${itemId}/`, {
+                const response = await fetch(`/api/cart-items/${itemId}/`, {
                     method: 'DELETE',
                     headers: {
+                        'Content-Type': 'application/json',
                         'X-CSRFToken': getCookie('csrftoken')
-                    }
+                    },
+                    credentials: 'same-origin'
                 });
 
                 if (!response.ok) {
-                    throw new Error('Failed to remove item');
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.detail || errorData.error || 'Failed to remove item');
                 }
 
                 if (window.VaitikanApp) {
@@ -239,8 +258,9 @@ const CartModule = (function () {
                 return true;
             } catch (error) {
                 if (window.VaitikanApp) {
-                    window.VaitikanApp.showToast('Failed to remove item', 'error');
+                    window.VaitikanApp.showToast(error.message || 'Failed to remove item', 'error');
                 }
+                console.error('Remove cart item error:', error);
                 throw error;
             }
         };
@@ -323,13 +343,21 @@ const CartModule = (function () {
     async function loadCart() {
         try {
             const response = await fetch('/api/cart/', {
+                method: 'GET',
                 headers: {
+                    'Content-Type': 'application/json',
                     'X-CSRFToken': getCookie('csrftoken')
-                }
+                },
+                credentials: 'same-origin'
             });
 
             if (!response.ok) {
-                throw new Error('Failed to load cart');
+                if (response.status === 401) {
+                    // User not authenticated, redirect to login
+                    window.location.href = '/login/';
+                    return;
+                }
+                throw new Error(`Failed to load cart: ${response.status}`);
             }
 
             const data = await response.json();
@@ -347,7 +375,9 @@ const CartModule = (function () {
      * @returns {object} Calculated totals
      */
     function calculateCartTotals(cart) {
-        if (!cart || !cart.items || cart.items.length === 0) {
+        const items = cart?.items || cart?.results || [];
+
+        if (!items || items.length === 0) {
             return {
                 subtotal: 0,
                 tax: 0,
@@ -357,8 +387,9 @@ const CartModule = (function () {
             };
         }
 
-        const subtotal = cart.items.reduce((sum, item) => {
-            const price = parseFloat(item.variant_size.variant.base_price);
+        const subtotal = items.reduce((sum, item) => {
+            // Use the enhanced variant_details structure
+            const price = parseFloat(item.variant_details?.final_price || 0);
             return sum + (price * item.quantity);
         }, 0);
 
@@ -366,7 +397,7 @@ const CartModule = (function () {
         const tax = subtotal * taxRate;
         const total = subtotal + tax;
 
-        const itemCount = cart.items.reduce((sum, item) => sum + item.quantity, 0);
+        const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
         return {
             subtotal: subtotal,
@@ -382,11 +413,33 @@ const CartModule = (function () {
      */
     async function updateCartCount() {
         try {
-            const cart = await loadCart();
+            const response = await fetch('/api/cart/', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                credentials: 'same-origin'
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    // User not authenticated, hide cart badge
+                    const cartBadge = document.getElementById('cartCount');
+                    if (cartBadge) {
+                        cartBadge.style.display = 'none';
+                    }
+                    return;
+                }
+                throw new Error(`Failed to load cart: ${response.status}`);
+            }
+
+            const cart = await response.json();
             const cartBadge = document.getElementById('cartCount');
 
-            if (cartBadge && cart.items) {
-                const totalItems = cart.items.reduce((sum, item) => sum + item.quantity, 0);
+            if (cartBadge) {
+                const items = cart.items || cart.results || [];
+                const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
                 cartBadge.textContent = totalItems;
                 cartBadge.style.display = totalItems > 0 ? 'inline' : 'none';
             }
@@ -413,7 +466,9 @@ const CartModule = (function () {
             // Check stock availability for all items
             const stockChecks = await Promise.all(
                 cart.items.map(async (item) => {
-                    const stock = await checkStockAvailability(item.variant_size.id);
+                    // item.variant_size is the ID, item.variant_details has the full details
+                    const variantSizeId = item.variant_size || item.variant_details?.id;
+                    const stock = await checkStockAvailability(variantSizeId);
                     return {
                         item: item,
                         stock: stock,
@@ -426,7 +481,8 @@ const CartModule = (function () {
 
             if (invalidItems.length > 0) {
                 const messages = invalidItems.map(check => {
-                    const productName = check.item.variant_size.variant.product.product_name;
+                    // Get product name from enhanced variant_details
+                    const productName = check.item.variant_details?.product_name || 'Product';
                     return `${productName}: Only ${check.stock.available} available (you have ${check.item.quantity} in cart)`;
                 });
 
@@ -466,13 +522,15 @@ const CartModule = (function () {
 
             // Check stock for all items
             for (const item of currentCart.items) {
-                const stock = await checkStockAvailability(item.variant_size.id);
+                const variantSizeId = item.variant_size || item.variant_details?.id;
+                const stock = await checkStockAvailability(variantSizeId);
 
                 // If stock is less than cart quantity, show warning
                 if (stock.available < item.quantity) {
+                    const productName = item.variant_details?.product_name || 'Product';
                     if (window.VaitikanApp) {
                         window.VaitikanApp.showToast(
-                            `Stock updated: ${item.variant_size.variant.product.product_name} now has only ${stock.available} available`,
+                            `Stock updated: ${productName} now has only ${stock.available} available`,
                             'warning'
                         );
                     }

@@ -228,7 +228,12 @@
                     selectedSize.checked = false;
                     this.disabled = true;
                 } catch (error) {
-                    VaitikanApp.showToast(error.message, 'error');
+                    console.error('Add to cart error:', error);
+                    // Ensure loading is hidden in case of error
+                    if (window.VaitikanApp) {
+                        window.VaitikanApp.hideLoading();
+                    }
+                    VaitikanApp.showToast(error.message || 'Failed to add item to cart', 'error');
                 }
             });
         });

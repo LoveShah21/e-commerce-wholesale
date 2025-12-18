@@ -149,7 +149,9 @@
             }
         })
             .then(response => response.json())
-            .then(addresses => {
+            .then(data => {
+                // Handle paginated response
+                const addresses = data.results || data;
                 renderAddresses(addresses);
             })
             .catch(error => {
@@ -183,10 +185,10 @@
                        value="${address.id}" ${index === 0 ? 'checked' : ''}
                        onchange="selectAddress(${address.id})">
                 <div class="ms-2">
-                    <strong>${address.address_line_1}</strong>
-                    ${address.address_line_2 ? `<br>${address.address_line_2}` : ''}
-                    <br>${address.city.city_name}, ${address.state.state_name} - ${address.postal_code.postal_code}
-                    <br>${address.country.country_name}
+                    <strong>${address.address_line1}</strong>
+                    ${address.address_line2 ? `<br>${address.address_line2}` : ''}
+                    <br>${address.city}, ${address.state} - ${address.postal_code_value}
+                    <br>${address.country}
                 </div>
             </label>
         `;
@@ -243,19 +245,22 @@
 
         let html = '<div class="list-group">';
         cart.items.forEach(item => {
-            const product = item.variant_size.variant.product;
-            const variant = item.variant_size.variant;
-            const size = item.variant_size.size;
-            const price = parseFloat(variant.base_price);
+            // Use the enhanced variant_details from the new serializer
+            const details = item.variant_details;
+            const productName = details.product_name || 'Unknown Product';
+            const fabricName = details.fabric_name || 'Unknown';
+            const colorName = details.color_name || 'Unknown';
+            const sizeCode = details.size_code || 'Unknown';
+            const price = parseFloat(details.final_price || 0);
             const total = price * item.quantity;
 
             html += `
             <div class="list-group-item">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="mb-1">${product.product_name}</h6>
+                        <h6 class="mb-1">${productName}</h6>
                         <small class="text-muted">
-                            ${variant.fabric.fabric_name} - ${variant.color.color_name} | Size: ${size.size_code}
+                            ${fabricName} - ${colorName} | Size: ${sizeCode}
                         </small>
                         <br>
                         <small>Quantity: ${item.quantity} × ₹${price.toFixed(2)}</small>
@@ -272,7 +277,8 @@
 
     function updateOrderSummary(cart) {
         const subtotal = cart.items.reduce((sum, item) => {
-            return sum + (parseFloat(item.variant_size.variant.base_price) * item.quantity);
+            const price = parseFloat(item.variant_details.final_price || 0);
+            return sum + (price * item.quantity);
         }, 0);
 
         const taxRate = 0.18;
@@ -340,7 +346,7 @@
                 'X-CSRFToken': getCookie('csrftoken')
             },
             body: JSON.stringify({
-                delivery_address: selectedAddressId
+                delivery_address_id: selectedAddressId
             })
         })
             .then(response => {

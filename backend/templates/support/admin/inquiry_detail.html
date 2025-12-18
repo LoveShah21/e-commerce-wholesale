@@ -54,13 +54,17 @@
                     <p class="mt-2">{{ inquiry.inquiry_description }}</p>
                 </div>
 
-                {% if inquiry.logo_file_url %}
+                {% if inquiry.logo_file %}
                 <div class="mb-3">
                     <strong>Logo File:</strong>
-                    <p class="mt-2">
+                    <div class="mt-2">
                         <i class="bi bi-paperclip me-2"></i>
-                        <a href="{{ inquiry.logo_file_url }}" target="_blank">{{ inquiry.logo_file_url }}</a>
-                    </p>
+                        <a href="{{ inquiry.logo_file.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-download me-1"></i>View/Download Logo
+                        </a>
+                        <br>
+                        <small class="text-muted">{{ inquiry.logo_file.public_id }}</small>
+                    </div>
                 </div>
                 {% endif %}
             </div>

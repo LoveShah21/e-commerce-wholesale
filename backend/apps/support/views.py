@@ -32,14 +32,8 @@ class InquiryListCreateView(generics.ListCreateAPIView):
         return Inquiry.objects.filter(user=user).select_related('user').order_by('-inquiry_date')
 
     def perform_create(self, serializer):
-        # Handle file upload if present
-        logo_file = self.request.FILES.get('logo_file')
-        if logo_file:
-            # Save file and store URL
-            # For now, we'll just store the filename
-            serializer.save(user=self.request.user, logo_file_url=logo_file.name)
-        else:
-            serializer.save(user=self.request.user)
+        # Save inquiry - file upload is handled automatically by CloudinaryField
+        serializer.save(user=self.request.user)
 
 class InquiryDetailView(generics.RetrieveAPIView):
     serializer_class = InquiryDetailSerializer

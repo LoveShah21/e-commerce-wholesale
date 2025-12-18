@@ -24,11 +24,11 @@
                     <label for="status" class="form-label">Payment Status</label>
                     <select class="form-select" id="status" name="status">
                         <option value="">All Statuses</option>
-                        <option value="initiated" {% if status_filter=='initiated' %}selected{% endif %}>Initiated
+                        <option value="initiated" {% if status_filter == 'initiated' %}selected{% endif %}>Initiated
                         </option>
-                        <option value="pending" {% if status_filter=='pending' %}selected{% endif %}>Pending</option>
-                        <option value="success" {% if status_filter=='success' %}selected{% endif %}>Success</option>
-                        <option value="failed" {% if status_filter=='failed' %}selected{% endif %}>Failed</option>
+                        <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                        <option value="success" {% if status_filter == 'success' %}selected{% endif %}>Success</option>
+                        <option value="failed" {% if status_filter == 'failed' %}selected{% endif %}>Failed</option>
                     </select>
                 </div>
                 <div class="col-md-4 d-flex align-items-end">
@@ -69,23 +69,26 @@
                                     #{{ payment.order.id }}
                                 </a>
                             </td>
-                            <td>₹{{ payment.amount }}</td>
+                            <td>
+                                <strong>₹{{ payment.amount|floatformat:2 }}</strong>
+                            </td>
                             <td>
                                 <span class="badge 
                                     {% if payment.payment_type == 'advance' %}bg-info
                                     {% elif payment.payment_type == 'final' %}bg-primary
                                     {% else %}bg-secondary{% endif %}">
-                                    {{ payment.payment_type_display }}
+                                    {{ payment.payment_type|title }}
                                 </span>
                             </td>
-                            <td>{{ payment.payment_method_display }}</td>
+                            <td>{{ payment.payment_method|upper }}</td>
                             <td>
                                 <span class="badge 
                                     {% if payment.payment_status == 'success' %}bg-success
                                     {% elif payment.payment_status == 'failed' %}bg-danger
-                                    {% elif payment.payment_status == 'pending' %}bg-warning
+                                    {% elif payment.payment_status == 'pending' %}bg-warning text-dark
+                                    {% elif payment.payment_status == 'initiated' %}bg-info
                                     {% else %}bg-secondary{% endif %}">
-                                    {{ payment.payment_status_display }}
+                                    {{ payment.payment_status|title }}
                                 </span>
                             </td>
                             <td>
@@ -96,12 +99,21 @@
                                 {% endif %}
                             </td>
                             <td>
-                                {% if payment.payment_status == 'failed' %}
-                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                {% if payment.payment_status == 'failed' and payment.can_retry %}
+                                <button type="button" class="btn btn-sm btn-outline-warning"
                                     onclick="retryPayment({{ payment.order.id }}, '{{ payment.payment_type }}')">
                                     <i class="bi bi-arrow-clockwise me-1"></i>Retry
                                 </button>
                                 {% elif payment.payment_status == 'success' %}
+                                <a href="{% url 'order-tracking-web' payment.order.id %}"
+                                    class="btn btn-sm btn-outline-success">
+                                    <i class="bi bi-eye me-1"></i>View Order
+                                </a>
+                                {% elif payment.payment_status == 'initiated' or payment.payment_status == 'pending' %}
+                                <span class="badge bg-info">
+                                    <i class="bi bi-clock me-1"></i>Processing
+                                </span>
+                                {% else %}
                                 <a href="{% url 'order-tracking-web' payment.order.id %}"
                                     class="btn btn-sm btn-outline-secondary">
                                     <i class="bi bi-eye me-1"></i>View Order

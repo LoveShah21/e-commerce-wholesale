@@ -152,7 +152,7 @@
 
                 <!-- Pagination -->
                 {% if page_obj.has_other_pages %}
-                <nav aria-label="Order pagination" class="mt-4">
+                <nav aria-label="Order pagination " class="mt-4">
                     <ul class="pagination justify-content-center">
                         {% if page_obj.has_previous %}
                         <li class="page-item">
@@ -166,7 +166,7 @@
                         {% endif %}
 
                         <li class="page-item active">
-                            <span class="page-link">
+                            <span class="page-link text-white">
                                 Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
                             </span>
                         </li>

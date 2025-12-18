@@ -148,11 +148,23 @@ MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 # Cloudinary Configuration
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
+
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME', default=''),
     'API_KEY': config('CLOUDINARY_API_KEY', default=''),
     'API_SECRET': config('CLOUDINARY_API_SECRET', default=''),
 }
+
+# Configure Cloudinary
+cloudinary.config(
+    cloud_name=CLOUDINARY_STORAGE['CLOUD_NAME'],
+    api_key=CLOUDINARY_STORAGE['API_KEY'],
+    api_secret=CLOUDINARY_STORAGE['API_SECRET'],
+    secure=True
+)
 
 # Use Cloudinary for media storage if configured
 if CLOUDINARY_STORAGE.get('CLOUD_NAME'):
@@ -424,3 +436,22 @@ CSP_FRAME_SRC = ("https://api.razorpay.com",)
 
 # Additional Security Settings
 SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+
+# Email Configuration
+# ===================
+# Gmail SMTP Configuration for sending emails
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
+
+# Email settings for development
+if DEBUG:
+    # In development, you can use console backend to see emails in console
+    # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    pass

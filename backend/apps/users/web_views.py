@@ -52,3 +52,42 @@ class WebRegisterView(View):
 def web_logout(request):
     logout(request)
     return redirect('/login/')
+
+
+class ProfileView(View):
+    """Web view for user profile page."""
+    
+    def get(self, request):
+        if not request.user.is_authenticated:
+            messages.error(request, 'Please login to view your profile.')
+            return redirect('/login/')
+        
+        context = {
+            'user': request.user,
+        }
+        return render(request, 'users/profile.html', context)
+    
+    def post(self, request):
+        if not request.user.is_authenticated:
+            messages.error(request, 'Please login to update your profile.')
+            return redirect('/login/')
+        
+        user = request.user
+        
+        # Update user information
+        full_name = request.POST.get('full_name', '').strip()
+        phone = request.POST.get('phone', '').strip()
+        
+        if full_name:
+            user.full_name = full_name
+        
+        if phone:
+            user.phone = phone
+        
+        try:
+            user.save()
+            messages.success(request, 'Profile updated successfully!')
+        except Exception as e:
+            messages.error(request, f'Error updating profile: {str(e)}')
+        
+        return redirect('/profile/')

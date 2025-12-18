@@ -137,7 +137,7 @@
 
     function renderOrderDetails(order) {
         const container = document.getElementById('orderDetailsContainer');
-        const orderDate = new Date(order.created_at).toLocaleDateString('en-IN', {
+        const orderDate = new Date(order.order_date).toLocaleDateString('en-IN', {
             year: 'numeric',
             month: 'long',
             day: 'numeric'

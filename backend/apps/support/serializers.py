@@ -3,18 +3,29 @@ from .models import Inquiry, Complaint, Feedback, QuotationRequest, QuotationPri
 from utils.security import validate_document_file, sanitize_filename
 
 class InquirySerializer(serializers.ModelSerializer):
+    logo_file = serializers.ImageField(required=False, allow_null=True)
+    
     class Meta:
         model = Inquiry
         fields = '__all__'
         read_only_fields = ('user', 'status', 'inquiry_date')
     
     def validate_logo_file(self, value):
-        """Validate uploaded logo file."""
+        """Validate uploaded logo file - only allow image formats."""
         if value:
-            validate_document_file(value)
-            # Sanitize filename
-            value.name = sanitize_filename(value.name)
-        return value
+            # Check file extension
+            allowed_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.heic', '.heif']
+            file_extension = value.name.lower().split('.')[-1]
+            if f'.{file_extension}' not in allowed_extensions:
+                raise serializers.ValidationError(
+                    f"Only image files are allowed. Supported formats: {', '.join(allowed_extensions)}"
+                )
+            
+            # Check file size (max 5MB)
+            max_size = 5 * 1024 * 1024  # 5MB
+            if value.size > max_size:
+                raise serializers.ValidationError(
+                    "File size too large. Maximum allowed size is 5
 
 class InquiryDetailSerializer(serializers.ModelSerializer):
     quotation_requests = serializers.SerializerMethodField()
