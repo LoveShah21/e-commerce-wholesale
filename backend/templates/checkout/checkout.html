@@ -220,6 +220,8 @@
                 cartData = data;
                 renderOrderItems(data);
                 updateOrderSummary(data);
+                // Also update place order button after cart loads
+                updatePlaceOrderButton();
             })
             .catch(error => {
                 console.error('Error loading cart:', error);

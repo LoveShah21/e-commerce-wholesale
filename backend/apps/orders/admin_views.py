@@ -18,13 +18,13 @@ from decimal import Decimal
 
 from .models import Order, OrderItem
 from apps.finance.models import Payment
-from apps.users.permissions import AdminRequiredMixin
+from apps.users.permissions import AdminRequiredMixin, AdminOrOperatorRequiredMixin
 from apps.manufacturing.services import ManufacturingService
 from services.order_service import OrderService
 from services.payment_service import PaymentService
 
 
-class AdminOrderListView(LoginRequiredMixin, AdminRequiredMixin, View):
+class AdminOrderListView(LoginRequiredMixin, AdminOrOperatorRequiredMixin, View):
     """
     Admin order list page with filters.
     
@@ -144,7 +144,7 @@ class AdminOrderListView(LoginRequiredMixin, AdminRequiredMixin, View):
         return render(request, 'orders/admin/list.html', context)
 
 
-class AdminOrderDetailView(LoginRequiredMixin, AdminRequiredMixin, View):
+class AdminOrderDetailView(LoginRequiredMixin, AdminOrOperatorRequiredMixin, View):
     """
     Admin order detail page with material requirements and payment tracking.
     

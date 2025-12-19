@@ -75,6 +75,20 @@ class AdminRequiredMixin(UserPassesTestMixin):
         return redirect('dashboard-web')
 
 
+# Mixin for class-based views requiring admin or operator access
+class AdminOrOperatorRequiredMixin(UserPassesTestMixin):
+    """
+    Mixin for class-based views that checks that the user is logged in and is an admin or operator.
+    """
+    def test_func(self):
+        return (self.request.user.is_authenticated and 
+                self.request.user.user_type in ['admin', 'operator'])
+    
+    def handle_no_permission(self):
+        messages.error(self.request, 'You do not have permission to access this page.')
+        return redirect('dashboard-web')
+
+
 # Decorator for view functions/methods requiring admin access
 def admin_required(view_func):
     """

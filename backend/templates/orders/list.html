@@ -98,9 +98,16 @@
                     </div>
                 </td>
                 <td>
-                    <a href="/api/reports/invoice/{{ order.id }}/" class="btn btn-sm btn-outline-secondary">
-                        <i class="fas fa-file-download"></i> PDF
+                    {% if order.advance_paid %}
+                    <a href="/invoices/{{ order.id }}/preview/" class="btn btn-sm btn-outline-info me-1" title="Preview Invoice">
+                        <i class="bi bi-eye"></i>
                     </a>
+                    <a href="/api/invoices/{{ order.id }}/download/" class="btn btn-sm btn-outline-secondary" title="Download PDF">
+                        <i class="bi bi-download"></i> PDF
+                    </a>
+                    {% else %}
+                    <span class="text-muted small">Pay advance first</span>
+                    {% endif %}
                 </td>
             </tr>
             {% empty %}

@@ -56,7 +56,7 @@ class OrderDetailView(generics.RetrieveAPIView):
     def get_queryset(self):
         """
         Optimized queryset with select_related and prefetch_related.
-        Allow admin users to access any order, regular users only their own orders.
+        Allow admin users and operators to access any order, regular users only their own orders.
         """
         base_queryset = Order.objects.select_related(
             'user',
@@ -74,8 +74,8 @@ class OrderDetailView(generics.RetrieveAPIView):
             'items__variant_size__stock_record'
         )
         
-        # Admin users can access any order, regular users only their own
-        if self.request.user.is_staff:
+        # Admin users and operators can access any order, regular users only their own
+        if self.request.user.is_staff or self.request.user.user_type in ['admin', 'operator']:
             return base_queryset
         else:
             return base_queryset.filter(user=self.request.user)

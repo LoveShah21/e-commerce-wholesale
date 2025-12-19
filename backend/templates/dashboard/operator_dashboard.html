@@ -37,7 +37,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h6 class="text-muted mb-1">Low Stock Items</h6>
-                            <h3 class="mb-0">{{ low_stock_items.count }}</h3>
+                            <h3 class="mb-0">{{ low_stock_count }}</h3>
                         </div>
                         <div class="text-danger">
                             <i class="bi bi-exclamation-triangle fs-1"></i>
@@ -63,24 +63,30 @@
                         <table class="table table-hover">
                             <thead>
                                 <tr>
-                                    <th>Product</th>
-                                    <th>Size</th>
-                                    <th>Stock</th>
-                                    <th>Reserved</th>
-                                    <th>Available</th>
+                                    <th>Type</th>
+                                    <th>Name</th>
+                                    <th>Details</th>
+                                    <th>Current Stock</th>
+                                    <th>Threshold</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for stock in low_stock_items %}
+                                {% for item in low_stock_items %}
                                 <tr>
-                                    <td>{{ stock.variant_size.variant.product.product_name }}</td>
-                                    <td>{{ stock.variant_size.size.size_code }}</td>
                                     <td>
-                                        <span class="badge bg-danger">{{ stock.quantity_in_stock }}</span>
+                                        {% if item.type == 'product' %}
+                                        <span class="badge bg-primary">Product</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Material</span>
+                                        {% endif %}
                                     </td>
-                                    <td>{{ stock.quantity_reserved }}</td>
-                                    <td>{{ stock.quantity_available }}</td>
+                                    <td><strong>{{ item.name }}</strong></td>
+                                    <td><small class="text-muted">{{ item.variant }}</small></td>
+                                    <td>
+                                        <span class="badge bg-danger">{{ item.current_stock }}</span>
+                                    </td>
+                                    <td>{{ item.threshold }}</td>
                                     <td>
                                         <a href="{% url 'inventory-overview-web' %}"
                                             class="btn btn-sm btn-outline-primary">

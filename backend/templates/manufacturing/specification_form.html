@@ -50,10 +50,8 @@
                             <option value="">Select Product First</option>
                             {% if specification %}
                             <option value="{{ specification.variant_size.variant.id }}" selected>
-                                {{ specification.variant_size.variant.fabric.fabric_name }} -
-                                {{ specification.variant_size.variant.color.color_name }}
-                                {% if specification.variant_size.variant.pattern %} - {{
-                                specification.variant_size.variant.pattern.pattern_name }}{% endif %}
+                                {{ specification.variant_size.variant.fabric.fabric_name }} - {{ specification.variant_size.variant.color.color_name }}
+                                {% if specification.variant_size.variant.pattern %} - {{ specification.variant_size.variant.pattern.pattern_name }}{% endif %}
                             </option>
                             {% endif %}
                         </select>

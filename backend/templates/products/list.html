@@ -7,33 +7,39 @@
 <div class="row">
     <div class="col-12 d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0">Our Products</h2>
-        {% can_manage_products user as can_manage %}
-        {% if can_manage %}
-        <a href="{% url 'admin-product-list' %}" class="btn btn-primary">
-            <i class="bi bi-plus-circle me-2"></i>Manage Products
-        </a>
-        {% endif %}
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="false" aria-controls="filterCollapse">
+                <i class="bi bi-funnel me-2"></i>Filters
+            </button>
+            {% can_manage_products user as can_manage %}
+            {% if can_manage %}
+            <a href="{% url 'admin-product-list' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>Manage Products
+            </a>
+            {% endif %}
+        </div>
     </div>
 </div>
 
-<div class="row">
-    <!-- Filters Sidebar -->
-    <div class="col-md-3 mb-4">
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="bi bi-funnel me-2"></i>Filters</h5>
-            </div>
-            <div class="card-body">
-                <form method="get" action="{% url 'product-list-web' %}" id="filterForm">
+<!-- Collapsible Filters Bar -->
+<div class="collapse mb-4" id="filterCollapse">
+    <div class="card">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-funnel me-2"></i>Filter Products</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-label="Close"></button>
+        </div>
+        <div class="card-body">
+            <form method="get" action="{% url 'product-list-web' %}" id="filterForm">
+                <div class="row g-3 align-items-end">
                     <!-- Search -->
-                    <div class="mb-3">
+                    <div class="col-12 col-md-6 col-lg-3">
                         <label for="search" class="form-label">Search</label>
                         <input type="text" class="form-control" id="search" name="search"
                             placeholder="Search products..." value="{{ search_query }}">
                     </div>
 
                     <!-- Fabric Filter -->
-                    <div class="mb-3">
+                    <div class="col-6 col-md-4 col-lg-2">
                         <label for="fabric" class="form-label">Fabric</label>
                         <select class="form-select" id="fabric" name="fabric">
                             <option value="">All Fabrics</option>
@@ -42,7 +48,7 @@
                     </div>
 
                     <!-- Color Filter -->
-                    <div class="mb-3">
+                    <div class="col-6 col-md-4 col-lg-2">
                         <label for="color" class="form-label">Color</label>
                         <select class="form-select" id="color" name="color">
                             <option value="">All Colors</option>
@@ -51,7 +57,7 @@
                     </div>
 
                     <!-- Pattern Filter -->
-                    <div class="mb-3">
+                    <div class="col-6 col-md-4 col-lg-2">
                         <label for="pattern" class="form-label">Pattern</label>
                         <select class="form-select" id="pattern" name="pattern">
                             <option value="">All Patterns</option>
@@ -59,19 +65,48 @@
                         </select>
                     </div>
 
-                    <button type="submit" class="btn btn-primary w-100 mb-2">
-                        <i class="bi bi-search me-2"></i>Apply Filters
-                    </button>
-                    <a href="{% url 'product-list-web' %}" class="btn btn-outline-secondary w-100">
-                        <i class="bi bi-x-circle me-2"></i>Clear Filters
-                    </a>
-                </form>
-            </div>
+                    <!-- Action Buttons -->
+                    <div class="col-6 col-md-6 col-lg-3">
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary flex-grow-1">
+                                <i class="bi bi-search me-1"></i>Apply
+                            </button>
+                            <a href="{% url 'product-list-web' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
+</div>
 
+<!-- Active Filters Display -->
+{% if search_query or selected_fabric or selected_color or selected_pattern %}
+<div class="mb-3">
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+        <span class="text-muted small">Active filters:</span>
+        {% if search_query %}
+        <span class="badge bg-primary">Search: {{ search_query }}</span>
+        {% endif %}
+        {% if selected_fabric %}
+        <span class="badge bg-info">Fabric filter applied</span>
+        {% endif %}
+        {% if selected_color %}
+        <span class="badge bg-info">Color filter applied</span>
+        {% endif %}
+        {% if selected_pattern %}
+        <span class="badge bg-info">Pattern filter applied</span>
+        {% endif %}
+        <a href="{% url 'product-list-web' %}" class="btn btn-sm btn-link text-danger p-0 ms-2">Clear all</a>
+    </div>
+</div>
+{% endif %}
+
+<div class="row">
     <!-- Products Grid -->
-    <div class="col-md-9">
+    <div class="col-12">
         <div class="row mb-3">
             <div class="col-12">
                 <p class="text-muted">
@@ -138,5 +173,15 @@
             document.getElementById('filterForm').submit();
         });
     });
+
+    // Auto-expand filters if any are applied
+    {% if search_query or selected_fabric or selected_color or selected_pattern %}
+    document.addEventListener('DOMContentLoaded', function() {
+        var filterCollapse = document.getElementById('filterCollapse');
+        if (filterCollapse) {
+            var bsCollapse = new bootstrap.Collapse(filterCollapse, { show: true });
+        }
+    });
+    {% endif %}
 </script>
 {% endblock %}

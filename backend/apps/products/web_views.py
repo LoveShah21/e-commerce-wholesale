@@ -1,9 +1,12 @@
 from django.shortcuts import render, get_object_or_404
 from django.views import View
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q, Min
 from .models import Product, Fabric, Color, Pattern
 
-class ProductListView(View):
+class ProductListView(LoginRequiredMixin, View):
+    login_url = '/login/'
+    
     def get(self, request):
         products = Product.objects.all().prefetch_related('images', 'variants__sizes__stock_record')
         
@@ -45,7 +48,9 @@ class ProductListView(View):
         
         return render(request, 'products/list.html', context)
 
-class ProductDetailView(View):
+class ProductDetailView(LoginRequiredMixin, View):
+    login_url = '/login/'
+    
     def get(self, request, pk):
         product = get_object_or_404(
             Product.objects.prefetch_related(
