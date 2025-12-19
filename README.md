@@ -6,21 +6,21 @@ Welcome to the Vaitikan E-Commerce Platform API documentation. This comprehensiv
 
 ### Getting Started
 
-- **[Quick Start Guide](./QUICK_START.md)** - Get up and running in 5 minutes
+- **[Quick Start Guide](./docs/QUICK_START.md)** - Get up and running in 5 minutes
   - Register a user
   - Make your first API call
   - Complete a basic workflow
 
 ### Core Documentation
 
-- **[API Documentation](./API_DOCUMENTATION.md)** - Complete API reference
+- **[API Documentation](./docs/API_DOCUMENTATION.md)** - Complete API reference
 
   - All endpoints with request/response examples
   - Error handling
   - Razorpay payment integration
   - Rate limiting and pagination
 
-- **[Authentication Guide](./AUTHENTICATION_GUIDE.md)** - Security and authentication
+- **[Authentication Guide](./docs/AUTHENTICATION_GUIDE.md)** - Security and authentication
   - JWT token management
   - Role-based access control
   - Security best practices
@@ -28,8 +28,8 @@ Welcome to the Vaitikan E-Commerce Platform API documentation. This comprehensiv
 
 ### Additional Resources
 
-- **[Database Design](./database_design.md)** - Database schema and relationships
-- **[Fixture Documentation](../backend/database/fixtures/README.md)** - Sample data and testing
+- **[Database Design](./docs/database_design.md)** - Database schema and relationships
+- **[Fixture Documentation](./backend/database/fixtures/README.md)** - Sample data and testing
 
 ## 🚀 Quick Links
 
@@ -37,21 +37,21 @@ Welcome to the Vaitikan E-Commerce Platform API documentation. This comprehensiv
 
 | Task                | Documentation                                                      |
 | ------------------- | ------------------------------------------------------------------ |
-| First API call      | [Quick Start](./QUICK_START.md)                                    |
-| User authentication | [Authentication Guide](./AUTHENTICATION_GUIDE.md)                  |
-| Product management  | [API Docs - Products](./API_DOCUMENTATION.md#product-management)   |
-| Shopping cart       | [API Docs - Cart](./API_DOCUMENTATION.md#shopping-cart)            |
-| Order processing    | [API Docs - Orders](./API_DOCUMENTATION.md#orders)                 |
-| Payment integration | [API Docs - Razorpay](./API_DOCUMENTATION.md#razorpay-integration) |
+| First API call      | [Quick Start](./docs/QUICK_START.md)                                    |
+| User authentication | [Authentication Guide](./docs/AUTHENTICATION_GUIDE.md)                  |
+| Product management  | [API Docs - Products](./docs/API_DOCUMENTATION.md#product-management)   |
+| Shopping cart       | [API Docs - Cart](./docs/API_DOCUMENTATION.md#shopping-cart)            |
+| Order processing    | [API Docs - Orders](./docs/API_DOCUMENTATION.md#orders)                 |
+| Payment integration | [API Docs - Razorpay](./docs/API_DOCUMENTATION.md#razorpay-integration) |
 
 ### For Admins
 
 | Task                 | Documentation                                                       |
 | -------------------- | ------------------------------------------------------------------- |
-| Dashboard analytics  | [API Docs - Dashboard](./API_DOCUMENTATION.md#dashboard--analytics) |
-| Inventory management | [API Docs - Manufacturing](./API_DOCUMENTATION.md#manufacturing)    |
-| Order management     | [API Docs - Orders](./API_DOCUMENTATION.md#orders)                  |
-| Customer support     | [API Docs - Support](./API_DOCUMENTATION.md#support--feedback)      |
+| Dashboard analytics  | [API Docs - Dashboard](./docs/API_DOCUMENTATION.md#dashboard--analytics) |
+| Inventory management | [API Docs - Manufacturing](./docs/API_DOCUMENTATION.md#manufacturing)    |
+| Order management     | [API Docs - Orders](./docs/API_DOCUMENTATION.md#orders)                  |
+| Customer support     | [API Docs - Support](./docs/API_DOCUMENTATION.md#support--feedback)      |
 
 ## 🏗️ Platform Overview
 
@@ -121,7 +121,7 @@ curl http://localhost:8000/api/products/ \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 ```
 
-See the [Authentication Guide](./AUTHENTICATION_GUIDE.md) for complete details.
+See the [Authentication Guide](./docs/AUTHENTICATION_GUIDE.md) for complete details.
 
 ## 💳 Payment Integration
 
@@ -130,7 +130,7 @@ The platform integrates with Razorpay for secure payment processing:
 1. **Advance Payment**: 50% of order total at confirmation
 2. **Final Payment**: Remaining 50% before dispatch
 
-See the [Razorpay Integration Guide](./API_DOCUMENTATION.md#razorpay-integration) for implementation details.
+See the [Razorpay Integration Guide](./docs/API_DOCUMENTATION.md#razorpay-integration) for implementation details.
 
 ## 📊 API Endpoints Overview
 

@@ -1,10 +1,8 @@
----
-
 # Vaitikan City – Database Design (Production-Ready)
 
 ## 1. Design Goals
 
-- Support full shirt manufacturing workflow: catalog, inventory, manufacturing, orders, payments (50% advance + 50% before dispatch), customization, complaints.
+ Support full shirt manufacturing workflow: catalog, inventory, manufacturing, orders, payments (50% advance + 50% before dispatch), customization, complaints.
 - Be normalized enough to avoid anomalies, but aligned with real manufacturing behavior.
 - Make pricing, payments, stock, and consumption logically correct and easy to extend.
 
