@@ -58,7 +58,7 @@ class Order(models.Model):
         total = Decimal('0.00')
         for item in self.items.all():
             total += item.snapshot_unit_price * item.quantity
-        total += self.shipping_charges
+        total += Decimal(str(self.shipping_charges))
         return total
 
     def __str__(self):

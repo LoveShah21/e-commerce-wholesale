@@ -157,7 +157,7 @@ class OrderSerializer(serializers.ModelSerializer):
         total = Decimal('0.00')
         for item in obj.items.all():
             total += item.snapshot_unit_price * item.quantity
-        total += obj.shipping_charges
+        total += Decimal(str(obj.shipping_charges))
         return total
 
 class OrderCreateSerializer(serializers.Serializer):

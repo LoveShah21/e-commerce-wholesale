@@ -92,7 +92,7 @@ class DetailedRequestLoggingMiddleware(MiddlewareMixin):
     """
     
     def __init__(self, get_response):
-        self.get_response = get_response
+        super().__init__(get_response)
         self.logger = logging.getLogger('apps.users')
         from decouple import config
         self.enabled = settings.DEBUG or config('DETAILED_REQUEST_LOGGING', default=False, cast=bool)
@@ -153,7 +153,7 @@ class SecurityEventLoggingMiddleware(MiddlewareMixin):
     """
     
     def __init__(self, get_response):
-        self.get_response = get_response
+        super().__init__(get_response)
         self.logger = logging.getLogger('django.security')
     
     def process_response(self, request, response):

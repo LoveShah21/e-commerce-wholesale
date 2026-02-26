@@ -36,7 +36,7 @@ from apps.products.models import (
     Product, ProductImage, ProductVariant, VariantSize, Stock
 )
 from apps.finance.models import TaxConfiguration
-from apps.manufacturing.models import RawMaterial, Supplier, MaterialCategory
+from apps.manufacturing.models import RawMaterial, Supplier, MaterialType, MaterialSupplier
 
 # ============================================================================
 # PUBLIC SHIRT IMAGE URLS (Free to use Unsplash/Pexels images)
@@ -110,28 +110,40 @@ def create_users():
     if not admin:
         admin = User.objects.create_superuser(
             email='admin@vaitikan.com',
+            username='admin',
             password='admin123',
             full_name='Vaitikan Admin',
-            phone_number='+919876543210',
-            user_role='admin'
+            phone='+919876543210',
+            user_type='admin'
         )
         print("   ✓ Created admin: admin@vaitikan.com / admin123")
     else:
         admin.set_password('admin123')
+        admin.user_type = 'admin'
+        admin.is_staff = True
+        admin.is_superuser = True
         admin.save()
-        print("   ✓ Updated admin password")
+        print("   ✓ Updated admin: admin@vaitikan.com / admin123")
     
     # Operator User
     operator = User.objects.filter(email='operator@vaitikan.com').first()
     if not operator:
         operator = User.objects.create_user(
             email='operator@vaitikan.com',
+            username='operator',
             password='operator123',
             full_name='Vaitikan Operator',
-            phone_number='+919876543211',
-            user_role='operator'
+            phone='+919876543211',
+            user_type='operator',
+            is_staff=True
         )
         print("   ✓ Created operator: operator@vaitikan.com / operator123")
+    else:
+        operator.set_password('operator123')
+        operator.user_type = 'operator'
+        operator.is_staff = True
+        operator.save()
+        print("   ✓ Updated operator: operator@vaitikan.com / operator123")
     
     # Sample Customers
     customers = [
@@ -144,17 +156,18 @@ def create_users():
         if not customer:
             customer = User.objects.create_user(
                 email=email,
+                username=email.split('@')[0],
                 password='customer123',
                 full_name=name,
-                phone_number=phone,
-                user_role='customer'
+                phone=phone,
+                user_type='customer'
             )
             print(f"   ✓ Created customer: {email} / customer123")
     
     # Create address for customers
     postal_code = PostalCode.objects.first()
     if postal_code:
-        for customer in User.objects.filter(user_role='customer'):
+        for customer in User.objects.filter(user_type='customer'):
             Address.objects.get_or_create(
                 user=customer,
                 postal_code=postal_code,
@@ -399,10 +412,19 @@ def create_manufacturing_data():
     """Create manufacturing-related data."""
     print("\n🏭 Creating Manufacturing Data...")
     
-    # Material Categories
-    fabric_cat, _ = MaterialCategory.objects.get_or_create(category_name='Fabrics')
-    buttons_cat, _ = MaterialCategory.objects.get_or_create(category_name='Buttons')
-    thread_cat, _ = MaterialCategory.objects.get_or_create(category_name='Threads')
+    # Material Types
+    fabric_mt, _ = MaterialType.objects.get_or_create(
+        material_type_name='Fabrics',
+        defaults={'unit_of_measurement': 'meters'}
+    )
+    buttons_mt, _ = MaterialType.objects.get_or_create(
+        material_type_name='Buttons',
+        defaults={'unit_of_measurement': 'pieces'}
+    )
+    thread_mt, _ = MaterialType.objects.get_or_create(
+        material_type_name='Threads',
+        defaults={'unit_of_measurement': 'spools'}
+    )
     
     # Suppliers
     supplier1, _ = Supplier.objects.get_or_create(
@@ -411,7 +433,6 @@ def create_manufacturing_data():
             'contact_person': 'Ramesh Patel',
             'email': 'sales@premiumfabrics.com',
             'phone': '+919876500001',
-            'address': 'Textile Market, Surat'
         }
     )
     
@@ -421,45 +442,52 @@ def create_manufacturing_data():
             'contact_person': 'Priya Shah',
             'email': 'info@buttonworld.com',
             'phone': '+919876500002',
-            'address': 'Industrial Area, Ahmedabad'
         }
     )
     
     # Raw Materials
-    RawMaterial.objects.get_or_create(
+    rm1, _ = RawMaterial.objects.get_or_create(
         material_name='Cotton Fabric (White)',
+        material_type=fabric_mt,
         defaults={
-            'category': fabric_cat,
-            'unit': 'meters',
-            'quantity_in_stock': Decimal('1000.00'),
-            'reorder_level': Decimal('100.00'),
-            'unit_cost': Decimal('150.00'),
-            'supplier': supplier1
+            'current_quantity': Decimal('1000.00'),
+            'default_reorder_level': Decimal('100.00'),
+            'unit_price': Decimal('150.00'),
         }
     )
     
-    RawMaterial.objects.get_or_create(
+    rm2, _ = RawMaterial.objects.get_or_create(
         material_name='Shell Buttons',
+        material_type=buttons_mt,
         defaults={
-            'category': buttons_cat,
-            'unit': 'pieces',
-            'quantity_in_stock': Decimal('5000.00'),
-            'reorder_level': Decimal('500.00'),
-            'unit_cost': Decimal('2.00'),
-            'supplier': supplier2
+            'current_quantity': Decimal('5000.00'),
+            'default_reorder_level': Decimal('500.00'),
+            'unit_price': Decimal('2.00'),
         }
     )
     
-    RawMaterial.objects.get_or_create(
+    rm3, _ = RawMaterial.objects.get_or_create(
         material_name='White Thread',
+        material_type=thread_mt,
         defaults={
-            'category': thread_cat,
-            'unit': 'spools',
-            'quantity_in_stock': Decimal('200.00'),
-            'reorder_level': Decimal('20.00'),
-            'unit_cost': Decimal('25.00'),
-            'supplier': supplier1
+            'current_quantity': Decimal('200.00'),
+            'default_reorder_level': Decimal('20.00'),
+            'unit_price': Decimal('25.00'),
         }
+    )
+    
+    # Material Supplier relationships
+    MaterialSupplier.objects.get_or_create(
+        material=rm1, supplier=supplier1,
+        defaults={'supplier_price': Decimal('145.00'), 'min_order_quantity': Decimal('50.00'), 'is_preferred': True}
+    )
+    MaterialSupplier.objects.get_or_create(
+        material=rm2, supplier=supplier2,
+        defaults={'supplier_price': Decimal('1.80'), 'min_order_quantity': Decimal('1000.00'), 'is_preferred': True}
+    )
+    MaterialSupplier.objects.get_or_create(
+        material=rm3, supplier=supplier1,
+        defaults={'supplier_price': Decimal('22.00'), 'min_order_quantity': Decimal('10.00'), 'is_preferred': True}
     )
     
     print(f"   ✓ Created {Supplier.objects.count()} suppliers, {RawMaterial.objects.count()} raw materials")
