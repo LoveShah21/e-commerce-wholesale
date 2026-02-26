@@ -342,17 +342,18 @@ class OrderService(BaseService):
     @classmethod
     def get_order_total(cls, order_id: int) -> Dict[str, Decimal]:
         """
-        Calculate the total amount for an order including tax.
+        Calculate the total amount for an order including shipping and tax.
         
         Args:
             order_id: The ID of the order
             
         Returns:
             A dictionary containing:
-                - subtotal: Total before tax
-                - tax_amount: Tax amount
+                - subtotal: Total before tax and shipping
+                - shipping_charges: Shipping charges applied
+                - tax_amount: Tax amount (GST)
                 - tax_percentage: Tax percentage applied
-                - total: Total including tax
+                - total: Total including shipping and tax
         """
         try:
             order = Order.objects.prefetch_related('items').get(id=order_id)
@@ -364,6 +365,12 @@ class OrderService(BaseService):
         subtotal = Decimal('0.00')
         for item in order.items.all():
             subtotal += item.snapshot_unit_price * item.quantity
+        
+        # Get shipping charges from the order (default ₹100)
+        shipping_charges = order.shipping_charges
+        
+        # Taxable amount = subtotal + shipping
+        taxable_amount = subtotal + shipping_charges
         
         # Get tax configuration at order date
         from apps.finance.models import TaxConfiguration
@@ -377,14 +384,16 @@ class OrderService(BaseService):
             Q(effective_to__gte=order_date) | Q(effective_to__isnull=True)
         ).order_by('-effective_from').first()
         
-        tax_percentage = tax_config.tax_percentage if tax_config else Decimal('0.00')
+        # Default to 18% GST if no tax configuration found
+        tax_percentage = tax_config.tax_percentage if tax_config else Decimal('18.00')
         
         # Calculate tax and total
         from services.utils import calculate_total_with_tax
-        tax_amount, total = calculate_total_with_tax(subtotal, tax_percentage)
+        tax_amount, total = calculate_total_with_tax(taxable_amount, tax_percentage)
         
         return {
             'subtotal': subtotal,
+            'shipping_charges': shipping_charges,
             'tax_amount': tax_amount,
             'tax_percentage': tax_percentage,
             'total': total

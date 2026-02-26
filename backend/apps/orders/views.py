@@ -1,10 +1,13 @@
 from rest_framework import generics, permissions, status, viewsets, filters
 from rest_framework.response import Response
 from rest_framework.decorators import action
+from rest_framework.views import APIView
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.utils import timezone
 from .models import Order, Cart, CartItem
 from .serializers import OrderSerializer, OrderCreateSerializer, CartSerializer, CartItemSerializer
 from services.cart_service import CartService
+from services.order_service import OrderService
 from apps.users.permissions import IsAdmin
 
 class OrderListCreateView(generics.ListCreateAPIView):
@@ -79,6 +82,48 @@ class OrderDetailView(generics.RetrieveAPIView):
             return base_queryset
         else:
             return base_queryset.filter(user=self.request.user)
+
+
+class OrderCancelView(APIView):
+    """
+    Customer-side order cancellation endpoint.
+    
+    Allows authenticated customers to cancel their own orders.
+    Orders can only be cancelled if they are in 'pending' or 'confirmed' status.
+    Dispatched, delivered, or already cancelled orders cannot be cancelled.
+    """
+    permission_classes = (permissions.IsAuthenticated,)
+    
+    def post(self, request, pk):
+        reason = request.data.get('reason', '')
+        
+        try:
+            order = OrderService.cancel_order(
+                order_id=pk,
+                user=request.user,
+                reason=reason
+            )
+            
+            # Update cancellation metadata
+            order.cancellation_reason = reason
+            order.cancelled_at = timezone.now()
+            order.save()
+            
+            serializer = OrderSerializer(order)
+            return Response(
+                {
+                    'message': 'Order cancelled successfully',
+                    'data': serializer.data
+                },
+                status=status.HTTP_200_OK
+            )
+        except DjangoValidationError as e:
+            error_message = e.message if hasattr(e, 'message') else str(e)
+            return Response(
+                {'error': error_message},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
 
 class CartViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticated,)
@@ -207,3 +252,4 @@ class CartItemViewSet(viewsets.ModelViewSet):
             )
         except DjangoValidationError as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+

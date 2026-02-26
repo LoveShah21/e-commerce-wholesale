@@ -45,16 +45,20 @@ class Order(models.Model):
     order_date = models.DateTimeField(auto_now_add=True)
     expected_delivery_date = models.DateTimeField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    shipping_charges = models.DecimalField(max_digits=10, decimal_places=2, default=100.00)
+    cancellation_reason = models.TextField(null=True, blank=True)
+    cancelled_at = models.DateTimeField(null=True, blank=True)
     notes = models.TextField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     @property
     def total_amount(self):
-        """Calculate total amount from order items"""
+        """Calculate total amount from order items (subtotal + shipping)"""
         from decimal import Decimal
         total = Decimal('0.00')
         for item in self.items.all():
             total += item.snapshot_unit_price * item.quantity
+        total += self.shipping_charges
         return total
 
     def __str__(self):

@@ -144,14 +144,20 @@ class OrderSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Order
-        fields = ('id', 'created_at', 'order_date', 'status', 'delivery_address', 'items', 'notes', 'total_amount')
+        fields = (
+            'id', 'created_at', 'order_date', 'status', 'delivery_address',
+            'items', 'notes', 'shipping_charges', 'cancellation_reason',
+            'cancelled_at', 'total_amount'
+        )
         read_only_fields = ('user', 'order_date', 'status')
     
     def get_total_amount(self, obj):
-        """Calculate total amount from order items"""
-        total = 0
+        """Calculate total amount from order items + shipping"""
+        from decimal import Decimal
+        total = Decimal('0.00')
         for item in obj.items.all():
             total += item.snapshot_unit_price * item.quantity
+        total += obj.shipping_charges
         return total
 
 class OrderCreateSerializer(serializers.Serializer):

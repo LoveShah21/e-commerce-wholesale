@@ -49,9 +49,11 @@ class QuotationPrice(models.Model):
     )
 
     quotation = models.ForeignKey(QuotationRequest, on_delete=models.CASCADE, related_name='prices')
+    order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True, related_name='quotation_prices')
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
     customization_charge_per_unit = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     quoted_quantity = models.IntegerField()
+    cost_sheet = CloudinaryField('cost_sheet', null=True, blank=True, folder='cost_sheets')
     valid_from = models.DateTimeField()
     valid_until = models.DateTimeField()
     quoted_date = models.DateTimeField(auto_now_add=True)

@@ -44,16 +44,23 @@ class InquirySerializer(serializers.ModelSerializer):
 
 # Define QuotationPrice serializer first
 class QuotationPriceSerializer(serializers.ModelSerializer):
+    cost_sheet_url = serializers.SerializerMethodField()
+    
     class Meta:
         model = QuotationPrice
         fields = '__all__'
         read_only_fields = ('quoted_date', 'status')
+    
+    def get_cost_sheet_url(self, obj):
+        if obj.cost_sheet:
+            return obj.cost_sheet.url if hasattr(obj.cost_sheet, 'url') else str(obj.cost_sheet)
+        return None
 
 class QuotationPriceCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = QuotationPrice
-        fields = ('quotation', 'unit_price', 'customization_charge_per_unit', 
-                  'quoted_quantity', 'valid_from', 'valid_until')
+        fields = ('quotation', 'order', 'unit_price', 'customization_charge_per_unit', 
+                  'quoted_quantity', 'cost_sheet', 'valid_from', 'valid_until')
 
 # Define QuotationRequest serializers
 class QuotationRequestSerializer(serializers.ModelSerializer):
