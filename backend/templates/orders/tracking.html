@@ -92,6 +92,34 @@
             </div>
         </div>
 
+        <!-- Cancel Order Section -->
+        <div class="card shadow-sm mb-4" id="cancelOrderCard" style="display: none;">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="bi bi-x-circle me-2"></i>Cancel Order</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">You can cancel this order if it hasn't been processed yet.</p>
+                <button class="btn btn-outline-danger w-100" onclick="showCancelForm()">
+                    <i class="bi bi-x-lg me-2"></i>Cancel This Order
+                </button>
+                <div id="cancelForm" style="display: none;" class="mt-3">
+                    <div class="mb-3">
+                        <label for="cancelReason" class="form-label">Reason for Cancellation</label>
+                        <textarea class="form-control" id="cancelReason" rows="3"
+                            placeholder="Please tell us why you want to cancel this order (optional)"></textarea>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-danger" onclick="cancelOrder()">
+                            <i class="bi bi-x-circle me-2"></i>Confirm Cancellation
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="hideCancelForm()">
+                            Go Back
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Complaint Section -->
         <div class="card shadow-sm">
             <div class="card-header bg-danger text-white">
@@ -325,6 +353,65 @@
         html += '</div>';
 
         container.innerHTML = html;
+
+        // Show cancel button for orders that can be cancelled
+        if (status === 'pending' || status === 'confirmed') {
+            document.getElementById('cancelOrderCard').style.display = 'block';
+        }
+    }
+
+    function showCancelForm() {
+        document.getElementById('cancelForm').style.display = 'block';
+        document.querySelector('#cancelOrderCard button[onclick="showCancelForm()"]').style.display = 'none';
+    }
+
+    function hideCancelForm() {
+        document.getElementById('cancelForm').style.display = 'none';
+        document.querySelector('#cancelOrderCard button[onclick="showCancelForm()"]').style.display = 'block';
+    }
+
+    function cancelOrder() {
+        const reason = document.getElementById('cancelReason').value;
+        const cancelBtn = document.querySelector('#cancelForm .btn-danger');
+        const originalText = cancelBtn.innerHTML;
+        cancelBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Cancelling...';
+        cancelBtn.disabled = true;
+
+        fetch(`/api/orders/${orderId}/cancel/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({ reason: reason })
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => { throw new Error(data.error || 'Failed to cancel order'); });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (typeof VaitikanApp !== 'undefined' && VaitikanApp.showToast) {
+                VaitikanApp.showToast('Order cancelled successfully!', 'success');
+            } else {
+                alert('Order cancelled successfully!');
+            }
+            // Reload the page to reflect the new status
+            location.reload();
+        })
+        .catch(error => {
+            console.error('Error cancelling order:', error);
+            if (typeof VaitikanApp !== 'undefined' && VaitikanApp.showToast) {
+                VaitikanApp.showToast(error.message || 'Failed to cancel order. Please try again.', 'error');
+            } else {
+                alert(error.message || 'Failed to cancel order. Please try again.');
+            }
+        })
+        .finally(() => {
+            cancelBtn.innerHTML = originalText;
+            cancelBtn.disabled = false;
+        });
     }
 
     function renderPaymentInfo(order) {

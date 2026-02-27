@@ -265,6 +265,20 @@ class OrderService(BaseService):
             f"Updated order {order_id} status from {old_status} to {new_status}"
         )
         
+        # If transitioning to 'processing', consume raw materials from inventory
+        if new_status == 'processing':
+            try:
+                from apps.manufacturing.services import ManufacturingService
+                consumed = ManufacturingService.consume_materials_for_order(order)
+                cls.log_info(
+                    f"Consumed materials for order {order_id}: "
+                    f"{len(consumed)} materials deducted from inventory"
+                )
+            except Exception as e:
+                cls.log_error(
+                    f"Failed to consume materials for order {order_id}: {str(e)}"
+                )
+        
         return order
     
     @classmethod

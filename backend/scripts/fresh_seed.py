@@ -36,7 +36,7 @@ from apps.products.models import (
     Product, ProductImage, ProductVariant, VariantSize, Stock
 )
 from apps.finance.models import TaxConfiguration
-from apps.manufacturing.models import RawMaterial, Supplier, MaterialType, MaterialSupplier
+from apps.manufacturing.models import RawMaterial, Supplier, MaterialType, MaterialSupplier, ManufacturingSpecification
 
 # ============================================================================
 # PUBLIC SHIRT IMAGE URLS (Free to use Unsplash/Pexels images)
@@ -491,6 +491,26 @@ def create_manufacturing_data():
     )
     
     print(f"   ✓ Created {Supplier.objects.count()} suppliers, {RawMaterial.objects.count()} raw materials")
+    
+    # Manufacturing Specifications — link every variant size to raw materials
+    # Each shirt requires: 1.5m fabric, 8 buttons, 0.5 spool thread
+    print("\n🔧 Creating Manufacturing Specifications...")
+    spec_count = 0
+    for vs in VariantSize.objects.all():
+        ManufacturingSpecification.objects.get_or_create(
+            variant_size=vs, material=rm1,
+            defaults={'quantity_required': Decimal('1.50')}
+        )
+        ManufacturingSpecification.objects.get_or_create(
+            variant_size=vs, material=rm2,
+            defaults={'quantity_required': Decimal('8.00')}
+        )
+        ManufacturingSpecification.objects.get_or_create(
+            variant_size=vs, material=rm3,
+            defaults={'quantity_required': Decimal('0.50')}
+        )
+        spec_count += 1
+    print(f"   ✓ Created specifications for {spec_count} variant sizes ({ManufacturingSpecification.objects.count()} total specs)")
 
 
 def print_summary():
