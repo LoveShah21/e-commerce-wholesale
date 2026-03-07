@@ -21,6 +21,13 @@ class Inquiry(models.Model):
     def __str__(self):
         return f"Inquiry {self.id} by {self.user}"
 
+    @property
+    def logo_file_url(self):
+        try:
+            return self.logo_file.url if self.logo_file else None
+        except Exception:
+            return None
+
 class QuotationRequest(models.Model):
     STATUS_CHOICES = (
         ('pending', 'Pending'),

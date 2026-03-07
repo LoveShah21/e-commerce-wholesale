@@ -201,6 +201,46 @@ class QuotationPriceAcceptRejectView(APIView):
             inquiry.save()
             logger.info(f"Inquiry {inquiry.id} status updated to accepted")
             
+            # === AUTO-GENERATE ORDER ===
+            from apps.orders.models import Order, OrderItem
+            user = request.user
+            
+            # Try to get default address, otherwise first address
+            address = user.addresses.filter(is_default=True).first()
+            if not address:
+                address = user.addresses.first()
+                
+            if address:
+                # Calculate total price (unit price + customization charge)
+                total_unit_price = quotation_price.unit_price + quotation_price.customization_charge_per_unit
+                
+                notes_text = f"Auto-generated from accepted Quotation Request #{quotation_price.quotation.id} (Inquiry #{inquiry.id})."
+                if quotation_price.quotation.customization_type:
+                    notes_text += f"\nCustomization: {quotation_price.quotation.customization_type}"
+                if quotation_price.quotation.customization_details:
+                    notes_text += f"\nDetails: {quotation_price.quotation.customization_details}"
+                
+                new_order = Order.objects.create(
+                    user=user,
+                    delivery_address=address,
+                    status='pending',
+                    notes=notes_text,
+                    logo_file=inquiry.logo_file  # Transfer logo explicitly
+                )
+                
+                OrderItem.objects.create(
+                    order=new_order,
+                    variant_size=quotation_price.quotation.variant_size,
+                    quantity=quotation_price.quoted_quantity,
+                    snapshot_unit_price=total_unit_price
+                )
+                
+                # Link quotation to the new order
+                quotation_price.order = new_order
+                logger.info(f"Auto-generated Order #{new_order.id} from QuotationPrice #{quotation_price.id}")
+            else:
+                logger.warning(f"Could not auto-generate order for QuotationPrice #{quotation_price.id}: User {user.id} has no address.")
+            
         else:
             quotation_price.status = 'rejected'
             quotation_price.quotation.status = 'rejected'

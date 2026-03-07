@@ -203,6 +203,21 @@
             </div>
         </div>
 
+        <!-- Order Logo -->
+        {% if order.logo_file_url %}
+        <div class="card mb-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0"><i class="bi bi-image me-2"></i>Customization Logo</h5>
+            </div>
+            <div class="card-body text-center">
+                <img src="{{ order.logo_file_url }}" alt="Order Logo" class="img-fluid rounded mb-2" style="max-height: 120px; object-fit: contain;">
+                <a href="{{ order.logo_file_url }}" target="_blank" class="btn btn-sm btn-outline-primary w-100 mt-2">
+                    <i class="bi bi-download me-1"></i>View/Download Logo
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Payment Status -->
         <div class="card mb-4">
             <div class="card-header bg-white">

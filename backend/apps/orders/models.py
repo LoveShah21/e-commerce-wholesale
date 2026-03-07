@@ -1,4 +1,5 @@
 from django.db import models
+from cloudinary.models import CloudinaryField
 from apps.users.models import User, Address
 from apps.products.models import VariantSize
 
@@ -49,7 +50,15 @@ class Order(models.Model):
     cancellation_reason = models.TextField(null=True, blank=True)
     cancelled_at = models.DateTimeField(null=True, blank=True)
     notes = models.TextField(null=True, blank=True)
+    logo_file = CloudinaryField('logo', null=True, blank=True, folder='order_logos')
     updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def logo_file_url(self):
+        try:
+            return self.logo_file.url if self.logo_file else None
+        except Exception:
+            return None
 
     @property
     def total_amount(self):
